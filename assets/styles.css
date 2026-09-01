@@ -85,8 +85,8 @@ a.link{display:inline-block}
   margin:16px 0;border-radius:2px}
 .foot{margin-top:46px;padding-top:18px;border-top:1px solid var(--rule);
   display:flex;justify-content:space-between;align-items:center;gap:12px}
-.otp{font-size:26px;letter-spacing:.4em;text-align:center;font-variant-numeric:tabular-nums;
-  padding:14px 13px}
+.otp{font-size:22px;letter-spacing:.2em;text-align:center;font-variant-numeric:tabular-nums;
+  padding:14px 10px}
 .count{font-variant-numeric:tabular-nums;font-weight:700}
 .count.warn{color:var(--plum)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}

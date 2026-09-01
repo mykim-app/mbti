@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SUPABASE_URL, SUPABASE_ANON_KEY, OTP_WINDOW_SECONDS } from "./config.js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, OTP_WINDOW_SECONDS, OTP_LENGTH } from "./config.js";
 
 const app = document.getElementById("app");
 const configured = !SUPABASE_URL.includes("여기에") && !SUPABASE_ANON_KEY.includes("여기에");
@@ -14,13 +14,15 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const stopTimer = () => { if (timer) { clearInterval(timer); timer = null; } };
 const valid = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const KO_NUM = { 4: "네", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열" };
+const LEN_KO = (KO_NUM[OTP_LENGTH] || OTP_LENGTH) + " 자리";
 
 /* ── 1단계: 인증번호 요청 ──────────────────────────────── */
 function renderRequest(msg, isError) {
   stopTimer();
   app.innerHTML = `
     <h1>관리자 확인</h1>
-    <p class="lead">등록된 관리자 주소로 여섯 자리 인증번호를 보냅니다.
+    <p class="lead">등록된 관리자 주소로 ${LEN_KO} 인증번호를 보냅니다.
       번호는 발송 후 ${OTP_WINDOW_SECONDS}초 안에 입력해야 합니다.</p>
     ${configured ? "" : `<div class="err">Supabase 접속 정보가 설정되지 않았습니다.
       <code>assets/config.js</code> 를 먼저 채워 주세요.</div>`}
@@ -64,10 +66,10 @@ function renderVerify(msg) {
   stopTimer();
   app.innerHTML = `
     <h1>인증번호 입력</h1>
-    <p class="lead">메일로 보낸 여섯 자리 숫자를 입력하세요.</p>
+    <p class="lead">메일로 보낸 ${LEN_KO} 숫자를 입력하세요.</p>
     <div class="field">
       <input id="code" class="input otp" inputmode="numeric" autocomplete="one-time-code"
-        maxlength="6" placeholder="000000">
+        maxlength="${OTP_LENGTH}" placeholder="${"0".repeat(OTP_LENGTH)}">
     </div>
     <p class="lead" style="margin-bottom:18px">남은 시간
       <span class="count" id="cnt">${OTP_WINDOW_SECONDS}초</span></p>
@@ -102,7 +104,8 @@ function renderVerify(msg) {
 
   const submit = async () => {
     const token = codeEl.value.replace(/\D/g, "");
-    if (token.length !== 6) return renderVerify("여섯 자리 숫자를 입력하세요.");
+    if (token.length !== OTP_LENGTH)
+      return renderVerify(`${LEN_KO} 숫자를 입력하세요.`);
     okBtn.disabled = true;
     const { error } = await sb.auth.verifyOtp({ email, token, type: "email" });
     if (error) return renderVerify("인증에 실패했습니다. " + error.message);
