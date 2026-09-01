@@ -5,13 +5,25 @@ import { BANK, DIMS } from "./questions.js";
 // 뒤집기는 위쪽만 계속 고르는 습관을 상쇄하기 위한 장치다.
 export function buildItems(perDim) {
   const list = [];
-  for (let i = 0; i < perDim; i++) {
-    DIMS.forEach((d, di) => {
-      const it = BANK[d].items[i];
-      list.push({ id: d + i, dim: d, q: it.q, o: it.o, flip: (i + di) % 2 === 1 });
+  DIMS.forEach((d) => {
+    // 지표마다 20문항 중 perDim 개를 무작위로 고른다.
+    const picked = shuffle(BANK[d].items.map((it, i) => ({ it, i }))).slice(0, perDim);
+    picked.forEach(({ it, i }, k) => {
+      // 고른 문항의 절반씩 선택지 순서를 뒤집어, 위쪽만 계속 고르는 습관을 상쇄한다.
+      list.push({ id: d + i, dim: d, q: it.q, o: it.o, flip: k % 2 === 1 });
     });
+  });
+  // 문항이 나오는 순서도 매번 섞는다.
+  return shuffle(list);
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return list;
+  return a;
 }
 
 // 선택값 0=앞 극 강함, 1=앞 극 약함, 2=뒤 극 약함, 3=뒤 극 강함

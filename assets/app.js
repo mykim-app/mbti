@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL, TYPE_JOB } from "./questions.js";
+import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL, TYPE_MATCH, TYPE_JOB } from "./questions.js";
 import { buildItems, score } from "./scoring.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
@@ -174,86 +174,96 @@ function renderResult() {
   const info = TYPE_INFO[type] || ["", ""];
   const detail = TYPE_DETAIL[type] || {};
   const job = TYPE_JOB[type] || { jobs: [] };
+  const match = TYPE_MATCH[type] || { fit: [], hard: [] };
   const close = DIMS.filter((d) => dims[d].pctA >= 42 && dims[d].pctA <= 58);
+  const today = new Date().toLocaleDateString("ko-KR");
+
+  const axes = DIMS.map((d) => {
+    const x = dims[d];
+    const leftWins = x.letter === BANK[d].poles[0];
+    const half = Math.abs(x.pctA - 50);
+    return `<div class="axis">
+      <div class="axis-top">
+        <span style="font-weight:${leftWins ? 700 : 400};color:${leftWins ? "var(--teal)" : "var(--soft)"}">
+          ${BANK[d].poles[0]} ${BANK[d].name[0]} ${x.pctA}%</span>
+        <span style="font-weight:${leftWins ? 400 : 700};color:${leftWins ? "var(--soft)" : "var(--plum)"}">
+          ${x.pctB}% ${BANK[d].name[1]} ${BANK[d].poles[1]}</span>
+      </div>
+      <div class="bar">
+        <div class="bar-fill" style="background:${leftWins ? "var(--teal)" : "var(--plum)"};
+          left:${leftWins ? 50 - half : 50}%;width:${half}%"></div>
+        <div class="bar-mid"></div>
+      </div>
+    </div>`;
+  }).join("");
+
+  const pair = (arr, cls) => (arr || []).map(([t, why, kind]) =>
+    `<div class="pair ${cls}"><b>${t}</b><span>${esc(why)}</span>
+      <em>${esc(kind)} · ${(TYPE_INFO[t] || [""])[0]}</em></div>`).join("");
 
   app.innerHTML = `
-    <p style="font-size:13.5px;color:var(--soft);margin:0">${esc(state.name)} 님의 결과</p>
-    <div class="type">${type}</div>
-    <div class="type-sub">${info[0]}</div>
-    <p class="lead">${info[1]}</p>
+  <div class="sheet">
+    <header class="rhead">
+      <div>
+        <p class="rname">${esc(state.name)} 님의 성격유형 결과</p>
+        <div class="type">${type}</div>
+        <div class="type-sub">${info[0]}</div>
+      </div>
+      <div class="rmeta">${today}<br>${state.items.length}문항</div>
+    </header>
+    <p class="rdesc">${info[1]}</p>
 
-    ${DIMS.map((d) => {
-      const x = dims[d];
-      const leftWins = x.letter === BANK[d].poles[0];
-      const half = Math.abs(x.pctA - 50);
-      return `<div class="axis">
-        <div class="axis-top">
-          <span style="font-weight:${leftWins ? 700 : 400};color:${leftWins ? "var(--teal)" : "var(--soft)"}">
-            ${BANK[d].poles[0]} ${BANK[d].name[0]}</span>
-          <span style="font-weight:${leftWins ? 400 : 700};color:${leftWins ? "var(--soft)" : "var(--plum)"}">
-            ${BANK[d].name[1]} ${BANK[d].poles[1]}</span>
-        </div>
-        <div class="bar">
-          <div class="bar-fill" style="background:${leftWins ? "var(--teal)" : "var(--plum)"};
-            left:${leftWins ? 50 - half : 50}%;width:${half}%"></div>
-          <div class="bar-mid"></div>
-        </div>
-        <div class="axis-pct"><span>${x.pctA}%</span>
-          <span>${x.tie ? "동률 — 재검사 시 바뀔 수 있음" : ""}</span>
-          <span>${x.pctB}%</span></div>
-      </div>`;
-    }).join("")}
+    <section class="blk">
+      <h2 class="sec">지표별 기울기</h2>
+      ${axes}
+      <p class="ranal">${analysisLine(dims)}</p>
+    </section>
 
-    ${close.length ? `<div class="note">${close.map((d) =>
-      `${BANK[d].poles[0]}/${BANK[d].poles[1]}`).join(", ")} 지표가 팽팽합니다.
-      다시 검사하면 이 글자는 바뀔 수 있습니다.</div>` : ""}
+    <div class="cols blk">
+      <section>
+        <h2 class="sec">강점</h2>
+        <ul class="rlist">${(detail.strong || []).map((t) => `<li>${t}</li>`).join("")}</ul>
+      </section>
+      <section>
+        <h2 class="sec">눈여겨볼 점</h2>
+        <ul class="rlist">${(detail.care || []).map((t) => `<li>${t}</li>`).join("")}</ul>
+      </section>
+    </div>
 
-    <h2 class="sec">지표 해석</h2>
-    <ul class="rlist">${DIMS.map((d) => {
-      const x = dims[d];
-      const win = Math.max(x.pctA, x.pctB);
-      const lv = win >= 75 ? "뚜렷합니다" : win >= 62 ? "비교적 분명합니다" : "근소합니다";
-      const nm = x.letter === BANK[d].poles[0] ? BANK[d].name[0] : BANK[d].name[1];
-      return `<li><b>${x.letter} ${nm} ${win}%</b> — 이 지표의 기울기는 ${lv}.</li>`;
-    }).join("")}</ul>
-    <p class="lead">${analysisLine(dims)}</p>
+    <section class="blk">
+      <h2 class="sec">다른 유형과의 궁합</h2>
+      <div class="cols">
+        <div><p class="sub">결이 잘 맞는 유형</p><div class="pairs">${pair(match.fit, "fitp")}</div></div>
+        <div><p class="sub">부딪히기 쉬운 유형</p><div class="pairs">${pair(match.hard, "hardp")}</div></div>
+      </div>
+    </section>
 
-    <h2 class="sec">강점</h2>
-    <ul class="rlist">${(detail.strong || []).map((t) => `<li>${t}</li>`).join("")}</ul>
+    <section class="blk">
+      <h2 class="sec">어울리는 일</h2>
+      <p class="jenv">${esc(job.env || "")}</p>
+      <div class="chips">${(job.jobs || []).map((j) => `<span class="jchip">${esc(j)}</span>`).join("")}</div>
+    </section>
 
-    <h2 class="sec">눈여겨볼 점</h2>
-    <ul class="rlist">${(detail.care || []).map((t) => `<li>${t}</li>`).join("")}</ul>
+    <p class="rfoot">${state.items.length}문항 기준의 참고 결과입니다.
+      같은 사람이 몇 주 뒤 다시 하면 한 지표가 바뀌기도 합니다.
+      궁합과 어울리는 일은 통계로 검증된 것이 아니므로 관계나 진로를 정하는 근거로 쓰지 않습니다.</p>
+  </div>
 
-    <h2 class="sec">다른 유형과의 궁합</h2>
-    <p class="sub">결이 잘 맞는 유형</p>
-    <div class="pairs">${(detail.fit || []).map(([t, why]) =>
-      `<div class="pair fitp"><b>${t}</b><span>${why}</span>
-        <em>${(TYPE_INFO[t] || [""])[0]}</em></div>`).join("")}</div>
-    <p class="sub">부딪히기 쉬운 유형</p>
-    <div class="pairs">${(detail.hard || []).map(([t, why]) =>
-      `<div class="pair hardp"><b>${t}</b><span>${why}</span>
-        <em>${(TYPE_INFO[t] || [""])[0]}</em></div>`).join("")}</div>
-    <div class="note">궁합은 통계로 검증된 것이 아니라 지표 조합에서 나오는 경향을 정리한
-      참고 자료입니다. 잘 맞는다고 해서 편한 사이가 되는 것도, 부딪히기 쉽다고 해서
-      맞지 않는 사이가 되는 것도 아닙니다.</div>
+  ${close.length ? `<div class="note noprint">${close.map((d) =>
+    `${BANK[d].poles[0]}/${BANK[d].poles[1]}`).join(", ")} 지표가 팽팽합니다.
+    다시 검사하면 이 글자는 바뀔 수 있습니다.</div>` : ""}
 
-    <h2 class="sec">어울리는 일</h2>
-    <p class="lead" style="margin-bottom:12px">${esc(job.env || "")}</p>
-    <div class="chips">${(job.jobs || []).map((j) =>
-      `<span class="jchip">${esc(j)}</span>`).join("")}</div>
-    <div class="note">적성은 성격유형 하나로 정해지지 않습니다. 경험, 배운 것, 처한 상황이
-      훨씬 크게 작용하므로 진로를 정하는 근거가 아니라 살펴볼 만한 목록으로 보시기 바랍니다.
-      여기 없는 일이 맞지 않는다는 뜻도 아닙니다.</div>
+  ${state.saved && !state.saved.ok ? `<div class="err noprint">결과를 저장하지 못했습니다. 관리자에게 알려 주세요.
+    <br><span style="color:var(--soft)">${esc(state.saved.msg)}</span></div>` : ""}
 
-    ${state.saved && !state.saved.ok ? `<div class="err">결과를 저장하지 못했습니다. 관리자에게 알려 주세요.
-      <br><span style="color:var(--soft)">${esc(state.saved.msg)}</span></div>` : ""}
+  <div class="row noprint" style="margin-top:26px">
+    <button class="btn" id="pdf">PDF로 저장</button>
+    <button class="btn-ghost" id="again">처음으로</button>
+  </div>
+  <p class="lead noprint" style="font-size:12.5px;margin-top:10px">
+    인쇄 창이 열리면 대상(프린터)을 'PDF로 저장'으로 고르세요. A4 한 장으로 나옵니다.</p>`;
 
-    <div class="note">이 검사는 ${state.items.length}문항 기반의 참고 지표입니다.
-      같은 사람이 몇 주 뒤 다시 하면 한 지표가 바뀌는 경우가 흔하므로,
-      확정된 성격이 아니라 자기 이해를 돕는 틀로 보시기 바랍니다.</div>
-
-    <button class="btn-ghost" id="again">처음으로</button>`;
-
+  document.getElementById("pdf").addEventListener("click", () => window.print());
   document.getElementById("again").addEventListener("click", () => { state.name = ""; renderIntro(); });
 }
 
