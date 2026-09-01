@@ -32,9 +32,9 @@ function renderIntro() {
     <label class="label">문항 수</label>
     <div class="modes">
       <button class="mode" data-per="20" aria-pressed="${state.perDim === 20}">
-        <b>정밀 80문항</b><span>지표당 20문항 · 약 12분</span></button>
+        <b>정밀 80문항</b><span>160문항 중 무작위 · 약 12분</span></button>
       <button class="mode" data-per="10" aria-pressed="${state.perDim === 10}">
-        <b>간편 40문항</b><span>지표당 10문항 · 약 6분</span></button>
+        <b>간편 40문항</b><span>160문항 중 무작위 · 약 6분</span></button>
     </div>
 
     <button class="btn" id="start" disabled>검사 시작</button>
@@ -44,7 +44,7 @@ function renderIntro() {
       강점과 눈여겨볼 점, 다른 유형과의 궁합, 어울리는 일까지 함께 보여 드립니다.</div>
 
     <div class="foot">
-      <span style="font-size:12.5px;color:var(--soft)">4지표 강도 채점</span>
+      <span style="font-size:12.5px;color:var(--soft)">문항 풀 160개 · 무작위 출제</span>
       <a class="dotlink" href="./admin.html" aria-label="관리">&middot;</a>
     </div>`;
 
