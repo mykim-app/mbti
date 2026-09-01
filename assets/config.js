@@ -5,8 +5,8 @@
 // RLS 정책(supabase/schema.sql)이 담당합니다. service_role key 는
 // 절대로 이 파일에 넣지 마세요.
 
-export const SUPABASE_URL = "https://여기에-프로젝트-주소.supabase.co";
-export const SUPABASE_ANON_KEY = "여기에-anon-public-key";
+export const SUPABASE_URL = "https://vewmmndhipvazzmttzzr.supabase.co";
+export const SUPABASE_ANON_KEY = "sb_publishable_BSnYjtOMPv6gdf7k0vnb_A_f5_Si7EP";
 
 // 관리자 이메일. schema.sql 의 RLS 정책에 적은 주소와 반드시 같아야 합니다.
 export const ADMIN_EMAIL = "mykim@igc.or.kr";
