@@ -36,7 +36,8 @@ h1{font-size:31px;font-weight:800;letter-spacing:-.03em;line-height:1.25;margin:
 .prog-num{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink);font-size:14px}
 .track{height:3px;background:var(--rule);border-radius:2px;overflow:hidden}
 .fill{height:100%;background:var(--teal);transition:width .28s ease}
-.q{border-top:1px solid var(--rule);padding:26px 0 6px}
+.q{border-top:1px solid var(--rule);padding:26px 0 6px;scroll-margin-top:96px;
+  scroll-margin-bottom:32px}
 .q-no{font-size:12px;font-weight:700;color:var(--soft);font-variant-numeric:tabular-nums;
   margin-bottom:11px}
 .stmt{display:flex;gap:11px;align-items:flex-start;font-size:15.5px;line-height:1.62;
@@ -81,7 +82,7 @@ h1{font-size:31px;font-weight:800;letter-spacing:-.03em;line-height:1.25;margin:
   transition:background .12s,border-color .12s}
 .opt:hover{background:#F2F4F1}
 .opt[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
-.nav{display:flex;justify-content:space-between;gap:12px;margin-top:34px;
+.nav{scroll-margin-bottom:24px;display:flex;justify-content:space-between;gap:12px;margin-top:34px;
   border-top:1px solid var(--rule);padding-top:22px}
 .type{font-size:62px;font-weight:800;letter-spacing:.06em;line-height:1;margin:6px 0 10px}
 .type-sub{font-size:16px;font-weight:700;margin-bottom:8px}

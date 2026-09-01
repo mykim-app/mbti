@@ -153,6 +153,8 @@ function renderQuiz() {
       document.querySelector(".fill").style.width =
         Math.round((d / state.items.length) * 100) + "%";
       syncNext();
+      // 답을 고르면 아직 답하지 않은 다음 문항으로 화면을 내려 준다.
+      setTimeout(() => scrollToNext(b.closest(".q"), slice), 170);
     }));
 
   document.getElementById("prev").addEventListener("click", () => {
@@ -164,6 +166,24 @@ function renderQuiz() {
   });
   syncNext();
   window.scrollTo(0, 0);
+}
+
+// 방금 답한 문항 다음에 있는, 아직 답하지 않은 문항으로 부드럽게 내려간다.
+// 남은 문항이 없으면 다음 쪽으로 넘어가는 단추까지 내려간다.
+function scrollToNext(fromEl, slice) {
+  if (!fromEl) return;
+  const soft = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const opt = { behavior: soft ? "smooth" : "auto", block: "center" };
+  const boxes = Array.from(app.querySelectorAll(".q"));
+  const rest = boxes.slice(boxes.indexOf(fromEl) + 1);
+  const next = rest.find((el) => {
+    const btn = el.querySelector("[data-id]");
+    return btn && state.answers[btn.dataset.id] === undefined;
+  });
+  if (next) return next.scrollIntoView(opt);
+  const done = slice.every((i) => state.answers[i.id] !== undefined);
+  const nav = document.querySelector(".nav");
+  if (done && nav) nav.scrollIntoView({ behavior: opt.behavior, block: "end" });
 }
 
 /* ── 결과 ──────────────────────────────────────────────── */
