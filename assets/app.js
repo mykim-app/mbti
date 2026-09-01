@@ -1,15 +1,23 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL, TYPE_MATCH, TYPE_JOB } from "./questions.js";
-import { buildItems, score } from "./scoring.js";
+import { buildItems, score, buildScaleItems, scoreScale } from "./scoring.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 const app = document.getElementById("app");
 const PER_PAGE = 5;
+const LIK = [
+  { v: 3, size: "d1", side: "ya" }, { v: 2, size: "d2", side: "ya" },
+  { v: 1, size: "d3", side: "ya" }, { v: 0, size: "d4", side: "mid" },
+  { v: -1, size: "d3", side: "no" }, { v: -2, size: "d2", side: "no" },
+  { v: -3, size: "d1", side: "no" }
+];
+const LIK_LABEL = { 3: "매우 그렇다", 2: "그렇다", 1: "조금 그렇다", 0: "잘 모르겠다",
+  "-1": "조금 그렇지 않다", "-2": "그렇지 않다", "-3": "전혀 그렇지 않다" };
 
 const configured = !SUPABASE_URL.includes("여기에") && !SUPABASE_ANON_KEY.includes("여기에");
 const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-const state = { name: "", perDim: 20, items: [], answers: {}, page: 0, result: null, saved: null };
+const state = { name: "", format: "choice", perDim: 20, items: [], answers: {}, page: 0, result: null, saved: null };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -18,7 +26,9 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
 function renderIntro() {
   app.innerHTML = `
     <h1>성격유형 검사</h1>
-    <p class="lead">각 질문마다 네 개의 답 중 자신에게 가장 가까운 하나를 고릅니다.
+    <p class="lead">${state.format === "scale"
+      ? "문장을 읽고 얼마나 그런지 일곱 단계 중 하나를 고릅니다."
+      : "각 질문마다 네 개의 답 중 자신에게 가장 가까운 하나를 고릅니다."}
       직장에서의 모습보다 <b>평소 편할 때의 나</b>를 기준으로, 오래 고민하지 말고 첫 반응대로 골라 주세요.</p>
 
     ${configured ? "" : `<div class="err">Supabase 접속 정보가 설정되지 않았습니다.
@@ -29,12 +39,12 @@ function renderIntro() {
       <input id="nm" class="input" maxlength="20" placeholder="예: 홍길동" autocomplete="name">
     </div>
 
-    <label class="label">문항 수</label>
+    <label class="label">검사 방식</label>
     <div class="modes">
-      <button class="mode" data-per="20" aria-pressed="${state.perDim === 20}">
-        <b>정밀 80문항</b><span>160문항 중 무작위 · 약 12분</span></button>
-      <button class="mode" data-per="10" aria-pressed="${state.perDim === 10}">
-        <b>간편 40문항</b><span>160문항 중 무작위 · 약 6분</span></button>
+      <button class="mode" data-fmt="choice" aria-pressed="${state.format === "choice"}">
+        <b>일반형 80문항</b><span>상황마다 네 답 중 하나 · 약 12분</span></button>
+      <button class="mode" data-fmt="scale" aria-pressed="${state.format === "scale"}">
+        <b>척도형 80문항</b><span>문장마다 그렇다 정도 표시 · 약 10분</span></button>
     </div>
 
     <button class="btn" id="start" disabled>검사 시작</button>
@@ -44,7 +54,7 @@ function renderIntro() {
       강점과 눈여겨볼 점, 다른 유형과의 궁합, 어울리는 일까지 함께 보여 드립니다.</div>
 
     <div class="foot">
-      <span style="font-size:12.5px;color:var(--soft)">문항 풀 160개 · 무작위 출제</span>
+      <span style="font-size:12.5px;color:var(--soft)">문항 풀 400개 · 매번 무작위 출제</span>
       <a class="dotlink" href="./admin.html" aria-label="관리">&middot;</a>
     </div>`;
 
@@ -57,12 +67,16 @@ function renderIntro() {
   sync();
 
   app.querySelectorAll(".mode").forEach((b) =>
-    b.addEventListener("click", () => { state.perDim = Number(b.dataset.per); renderIntro(); }));
+    b.addEventListener("click", () => {
+      state.format = b.dataset.fmt;
+      renderIntro();
+    }));
   startBtn.addEventListener("click", start);
 }
 
 function start() {
-  state.items = buildItems(state.perDim);
+  state.items = state.format === "scale"
+    ? buildScaleItems(state.perDim) : buildItems(state.perDim);
   state.answers = {};
   state.page = 0;
   state.result = null;
@@ -86,10 +100,25 @@ function renderQuiz() {
       </div>
       <div class="track"><div class="fill" style="width:${pct}%"></div></div>
     </div>
-    <p class="guide">네 개 중 자신에게 가장 가까운 하나를 고르세요.</p>
+    ${state.format === "scale" ? ""
+      : `<p class="guide">네 개 중 자신에게 가장 가까운 하나를 고르세요.</p>`}
     ${slice.map((it) => {
       const no = items.indexOf(it) + 1;
       const cur = state.answers[it.id];
+      if (it.scale) {
+        return `<div class="q">
+          <div class="q-no">${String(no).padStart(2, "0")}</div>
+          <p class="qt st">${esc(it.s)}</p>
+          <div class="lik">
+            <span class="lik-end">그렇다</span>
+            ${LIK.map(({ v, size, side }) =>
+              `<button class="dot7 ${side} ${size}" data-id="${it.id}" data-c="${v}"
+                aria-pressed="${cur === v}" title="${LIK_LABEL[v]}"
+                aria-label="${LIK_LABEL[v]}"></button>`).join("")}
+            <span class="lik-end">그렇지 않다</span>
+          </div>
+        </div>`;
+      }
       const order = it.flip ? [3, 2, 1, 0] : [0, 1, 2, 3];
       return `<div class="q">
         <div class="q-no">${String(no).padStart(2, "0")}</div>
@@ -113,11 +142,11 @@ function renderQuiz() {
     hint.textContent = ok ? "" : "이 쪽의 문항을 모두 선택하면 넘어갑니다.";
   };
 
-  app.querySelectorAll(".sc").forEach((b) =>
+  app.querySelectorAll(".sc, .dot7").forEach((b) =>
     b.addEventListener("click", () => {
       const id = b.dataset.id;
       state.answers[id] = Number(b.dataset.c);
-      app.querySelectorAll(`.sc[data-id="${id}"]`)
+      app.querySelectorAll(`[data-id="${id}"]`)
         .forEach((o) => o.setAttribute("aria-pressed", o === b));
       const d = state.items.filter((i) => state.answers[i.id] !== undefined).length;
       document.querySelector(".prog-num").textContent = `${d} / ${state.items.length}`;
@@ -139,7 +168,8 @@ function renderQuiz() {
 
 /* ── 결과 ──────────────────────────────────────────────── */
 async function finish() {
-  state.result = score(state.items, state.answers);
+  state.result = state.format === "scale"
+    ? scoreScale(state.items, state.answers) : score(state.items, state.answers);
   renderResult();
   window.scrollTo(0, 0);
   if (!sb) { state.saved = { ok: false, msg: "접속 정보 미설정" }; return renderResult(); }
