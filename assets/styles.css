@@ -140,38 +140,38 @@ a.link{display:inline-block}
   border-top:1px solid var(--rule);padding-top:11px}
 @media (min-width:560px){.cols{grid-template-columns:1fr 1fr}}
 
-/* ── A4 한 장 인쇄 ───────────────────────────────────── */
+/* ── A4 한 장 배치 — 인쇄와 PDF 저장에 함께 쓴다 ─────── */
+.sheet.compact{font-size:12px;line-height:1.5;background:#fff}
+.compact .rhead{padding-bottom:11px}
+.compact .rname{font-size:11px;margin-bottom:1px}
+.compact .type{font-size:46px;margin:3px 0 4px}
+.compact .type-sub{font-size:15px;margin-bottom:0}
+.compact .rmeta{font-size:10.5px}
+.compact .rdesc{font-size:12px;line-height:1.55;margin-top:9px}
+.compact .blk{margin-top:15px}
+.compact .sec{font-size:12px;margin:0 0 8px;padding-bottom:4px}
+.compact .axis{margin:0 0 8px}
+.compact .axis-top{font-size:11px;margin-bottom:4px}
+.compact .bar{height:16px;border-radius:3px}
+.compact .ranal{font-size:11px;line-height:1.5;margin-top:9px}
+.compact .cols{grid-template-columns:1fr 1fr;gap:19px}
+.compact .rlist{padding-left:16px}
+.compact .rlist li{font-size:12px;line-height:1.5;margin-bottom:4px}
+.compact .sub{font-size:10.5px;margin:0 0 7px}
+.compact .pairs{gap:5px}
+.compact .pair{padding:7px 10px;border-left-width:3px;gap:3px 10px}
+.compact .pair b{font-size:12.5px}
+.compact .pair span{font-size:11px;line-height:1.4}
+.compact .pair em{font-size:10px;line-height:1.3}
+.compact .jenv{font-size:11px;margin-bottom:8px}
+.compact .chips{gap:5px}
+.compact .jchip{font-size:11px;padding:4px 10px}
+.compact .rfoot{font-size:10px;line-height:1.45;margin-top:16px;padding-top:8px}
+
 @page{size:A4 portrait;margin:13mm 14mm}
 @media print{
   html,body{background:#fff}
   .wrap{max-width:none;padding:0}
   .noprint,.note,.err,.ok,.btn,.btn-ghost,.link,.dotlink{display:none !important}
-  .sheet{font-size:9pt;line-height:1.5}
-  .rhead{padding-bottom:8pt;border-bottom-width:1.4pt}
-  .rname{font-size:8.5pt;margin-bottom:1pt}
-  .type{font-size:34pt;margin:2pt 0 3pt}
-  .type-sub{font-size:11pt;margin-bottom:0}
-  .rmeta{font-size:8pt}
-  .rdesc{font-size:9pt;line-height:1.55;margin-top:7pt}
-  .blk{margin-top:11pt}
-  .sec{font-size:9pt;margin:0 0 6pt;padding-bottom:3pt}
-  .axis{margin:0 0 6pt}
-  .axis-top{font-size:8.5pt;margin-bottom:3pt}
-  .bar{height:12pt;border-radius:2pt}
-  .ranal{font-size:8.5pt;line-height:1.5;margin-top:7pt}
-  .cols{grid-template-columns:1fr 1fr;gap:14pt}
-  .rlist{padding-left:12pt}
-  .rlist li{font-size:9pt;line-height:1.5;margin-bottom:3pt}
-  .sub{font-size:8pt;margin:0 0 5pt}
-  .pairs{gap:4pt}
-  .pair{padding:5pt 8pt;border-width:.6pt;border-left-width:2.5pt;
-    grid-template-columns:auto 1fr;gap:2pt 8pt}
-  .pair b{font-size:9.5pt}
-  .pair span{font-size:8.5pt;line-height:1.4}
-  .pair em{font-size:7.5pt;line-height:1.3}
-  .jenv{font-size:8.5pt;margin-bottom:6pt}
-  .chips{gap:4pt}
-  .jchip{font-size:8.5pt;padding:3pt 8pt;border-width:.6pt}
-  .rfoot{font-size:7.5pt;line-height:1.45;margin-top:12pt;padding-top:6pt}
   .sheet,section,.cols,.pair,.axis{break-inside:avoid;page-break-inside:avoid}
 }

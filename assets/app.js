@@ -169,6 +169,59 @@ function analysisLine(dims) {
   return `가장 뚜렷한 지표는 ${dims[top].letter}(${nm(top)})로, 이 성향이 평소 판단과 행동에 가장 크게 드러납니다. ${tail}`;
 }
 
+/* ── PDF 저장 ──────────────────────────────────────────────
+   일반 브라우저에서는 인쇄 창을 띄워 'PDF로 저장'을 고르게 한다.
+   카카오톡·네이버 같은 앱 안의 화면(웹뷰)에서는 인쇄 창이 뜨지 않으므로
+   화면을 직접 A4 크기 PDF로 만들어 내려받는다. */
+const IN_APP = /KAKAOTALK|NAVER|Instagram|FB[AS]V|FBAN|Line\/|DaumApps|everytime|; ?wv\)/i
+  .test(navigator.userAgent);
+
+function loadScript(src) {
+  return new Promise((ok, no) => {
+    const el = document.createElement("script");
+    el.src = src;
+    el.onload = ok;
+    el.onerror = () => no(new Error("스크립트를 불러오지 못했습니다"));
+    document.head.appendChild(el);
+  });
+}
+
+async function savePdf(direct) {
+  const sheet = document.querySelector(".sheet");
+  if (!sheet) return;
+  const hint = document.getElementById("pdfhint");
+
+  if (!direct) {
+    sheet.classList.add("compact");
+    window.print();
+    setTimeout(() => sheet.classList.remove("compact"), 800);
+    return;
+  }
+
+  if (hint) hint.textContent = "PDF를 만드는 중입니다. 잠시 기다려 주세요.";
+  sheet.classList.add("compact");
+  try {
+    if (!window.html2pdf) {
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js");
+    }
+    await window.html2pdf().set({
+      margin: [13, 14, 13, 14],
+      filename: `성격유형결과_${state.name.trim() || "결과"}_${state.result.type}.pdf`,
+      image: { type: "jpeg", quality: 0.96 },
+      html2canvas: { scale: 2, backgroundColor: "#ffffff", useCORS: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    }).from(sheet).save();
+    if (hint) hint.textContent = "PDF를 내려받았습니다. 파일 앱이나 다운로드 폴더에서 확인하세요.";
+  } catch (e) {
+    if (hint) {
+      hint.innerHTML = "이 화면에서는 파일 저장이 막혀 있습니다. " +
+        "오른쪽 위 메뉴에서 '다른 브라우저로 열기'를 고른 뒤 다시 시도해 주세요.";
+    }
+  } finally {
+    sheet.classList.remove("compact");
+  }
+}
+
 function renderResult() {
   const { type, dims } = state.result;
   const info = TYPE_INFO[type] || ["", ""];
@@ -260,10 +313,15 @@ function renderResult() {
     <button class="btn" id="pdf">PDF로 저장</button>
     <button class="btn-ghost" id="again">처음으로</button>
   </div>
-  <p class="lead noprint" style="font-size:12.5px;margin-top:10px">
-    인쇄 창이 열리면 대상(프린터)을 'PDF로 저장'으로 고르세요. A4 한 장으로 나옵니다.</p>`;
+  <p class="lead noprint" id="pdfhint" style="font-size:12.5px;margin-top:10px">
+    ${IN_APP
+      ? "PDF 파일이 바로 내려받아집니다. 저장이 되지 않으면 이 화면을 기본 브라우저에서 열어 주세요."
+      : "인쇄 창이 열리면 대상(프린터)을 'PDF로 저장'으로 고르세요. A4 한 장으로 나옵니다."}</p>
+  <p class="lead noprint" style="font-size:12.5px;margin-top:4px">
+    <button class="link" id="pdfalt">저장이 안 되면 여기를 눌러 파일로 내려받기</button></p>`;
 
-  document.getElementById("pdf").addEventListener("click", () => window.print());
+  document.getElementById("pdf").addEventListener("click", () => savePdf(IN_APP));
+  document.getElementById("pdfalt").addEventListener("click", () => savePdf(true));
   document.getElementById("again").addEventListener("click", () => { state.name = ""; renderIntro(); });
 }
 
