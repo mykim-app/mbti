@@ -121,3 +121,6 @@ a.link{display:inline-block}
 .dotlink{color:#EBEAE4;text-decoration:none;font-size:20px;line-height:1;
   padding:6px 10px;border-radius:3px}
 .dotlink:hover,.dotlink:focus-visible{color:var(--soft)}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.jchip{border:1px solid var(--rule);background:var(--card);border-radius:20px;
+  padding:7px 14px;font-size:13.5px}

@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL } from "./questions.js";
+import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL, TYPE_JOB } from "./questions.js";
 import { buildItems, score } from "./scoring.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
@@ -172,6 +172,7 @@ function renderResult() {
   const { type, dims } = state.result;
   const info = TYPE_INFO[type] || ["", ""];
   const detail = TYPE_DETAIL[type] || {};
+  const job = TYPE_JOB[type] || { jobs: [] };
   const close = DIMS.filter((d) => dims[d].pctA >= 42 && dims[d].pctA <= 58);
 
   app.innerHTML = `
@@ -235,8 +236,14 @@ function renderResult() {
       참고 자료입니다. 잘 맞는다고 해서 편한 사이가 되는 것도, 부딪히기 쉽다고 해서
       맞지 않는 사이가 되는 것도 아닙니다.</div>
 
-    ${state.saved === null ? `<div class="ok">결과를 저장하는 중입니다.</div>` : ""}
-    ${state.saved && state.saved.ok ? `<div class="ok">결과를 저장했습니다. (${state.items.length}문항)</div>` : ""}
+    <h2 class="sec">어울리는 일</h2>
+    <p class="lead" style="margin-bottom:12px">${esc(job.env || "")}</p>
+    <div class="chips">${(job.jobs || []).map((j) =>
+      `<span class="jchip">${esc(j)}</span>`).join("")}</div>
+    <div class="note">적성은 성격유형 하나로 정해지지 않습니다. 경험, 배운 것, 처한 상황이
+      훨씬 크게 작용하므로 진로를 정하는 근거가 아니라 살펴볼 만한 목록으로 보시기 바랍니다.
+      여기 없는 일이 맞지 않는다는 뜻도 아닙니다.</div>
+
     ${state.saved && !state.saved.ok ? `<div class="err">결과를 저장하지 못했습니다. 관리자에게 알려 주세요.
       <br><span style="color:var(--soft)">${esc(state.saved.msg)}</span></div>` : ""}
 
