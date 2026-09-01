@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { BANK, DIMS, TYPE_INFO } from "./questions.js";
+import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL } from "./questions.js";
 import { buildItems, score } from "./scoring.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
@@ -44,7 +44,7 @@ function renderIntro() {
 
     <div class="foot">
       <span style="font-size:12.5px;color:var(--soft)">4지표 강도 채점</span>
-      <a class="link" href="./admin.html">관리자</a>
+      <a class="dotlink" href="./admin.html" aria-label="관리">&middot;</a>
     </div>`;
 
   const nm = document.getElementById("nm");
@@ -156,9 +156,22 @@ async function finish() {
   renderResult();
 }
 
+function analysisLine(dims) {
+  const sorted = DIMS.slice().sort((x, y) =>
+    Math.max(dims[y].pctA, dims[y].pctB) - Math.max(dims[x].pctA, dims[x].pctB));
+  const top = sorted[0], low = sorted[sorted.length - 1];
+  const nm = (d) => dims[d].letter === BANK[d].poles[0] ? BANK[d].name[0] : BANK[d].name[1];
+  const lowWin = Math.max(dims[low].pctA, dims[low].pctB);
+  const tail = lowWin < 62
+    ? `반대로 ${BANK[low].poles[0]}/${BANK[low].poles[1]}는 ${lowWin}%로 팽팽해, 상황에 따라 양쪽을 오갈 수 있습니다.`
+    : `네 지표 모두 방향이 비교적 분명한 편입니다.`;
+  return `가장 뚜렷한 지표는 ${dims[top].letter}(${nm(top)})로, 이 성향이 평소 판단과 행동에 가장 크게 드러납니다. ${tail}`;
+}
+
 function renderResult() {
   const { type, dims } = state.result;
   const info = TYPE_INFO[type] || ["", ""];
+  const detail = TYPE_DETAIL[type] || {};
   const close = DIMS.filter((d) => dims[d].pctA >= 42 && dims[d].pctA <= 58);
 
   app.innerHTML = `
@@ -192,6 +205,35 @@ function renderResult() {
     ${close.length ? `<div class="note">${close.map((d) =>
       `${BANK[d].poles[0]}/${BANK[d].poles[1]}`).join(", ")} 지표가 팽팽합니다.
       다시 검사하면 이 글자는 바뀔 수 있습니다.</div>` : ""}
+
+    <h2 class="sec">지표 해석</h2>
+    <ul class="rlist">${DIMS.map((d) => {
+      const x = dims[d];
+      const win = Math.max(x.pctA, x.pctB);
+      const lv = win >= 75 ? "뚜렷합니다" : win >= 62 ? "비교적 분명합니다" : "근소합니다";
+      const nm = x.letter === BANK[d].poles[0] ? BANK[d].name[0] : BANK[d].name[1];
+      return `<li><b>${x.letter} ${nm} ${win}%</b> — 이 지표의 기울기는 ${lv}.</li>`;
+    }).join("")}</ul>
+    <p class="lead">${analysisLine(dims)}</p>
+
+    <h2 class="sec">강점</h2>
+    <ul class="rlist">${(detail.strong || []).map((t) => `<li>${t}</li>`).join("")}</ul>
+
+    <h2 class="sec">눈여겨볼 점</h2>
+    <ul class="rlist">${(detail.care || []).map((t) => `<li>${t}</li>`).join("")}</ul>
+
+    <h2 class="sec">다른 유형과의 궁합</h2>
+    <p class="sub">결이 잘 맞는 유형</p>
+    <div class="pairs">${(detail.fit || []).map(([t, why]) =>
+      `<div class="pair fitp"><b>${t}</b><span>${why}</span>
+        <em>${(TYPE_INFO[t] || [""])[0]}</em></div>`).join("")}</div>
+    <p class="sub">부딪히기 쉬운 유형</p>
+    <div class="pairs">${(detail.hard || []).map(([t, why]) =>
+      `<div class="pair hardp"><b>${t}</b><span>${why}</span>
+        <em>${(TYPE_INFO[t] || [""])[0]}</em></div>`).join("")}</div>
+    <div class="note">궁합은 통계로 검증된 것이 아니라 지표 조합에서 나오는 경향을 정리한
+      참고 자료입니다. 잘 맞는다고 해서 편한 사이가 되는 것도, 부딪히기 쉽다고 해서
+      맞지 않는 사이가 되는 것도 아닙니다.</div>
 
     ${state.saved === null ? `<div class="ok">결과를 저장하는 중입니다.</div>` : ""}
     ${state.saved && state.saved.ok ? `<div class="ok">결과를 저장했습니다. (${state.items.length}문항)</div>` : ""}
