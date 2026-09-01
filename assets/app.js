@@ -199,26 +199,63 @@ async function savePdf(direct) {
   }
 
   if (hint) hint.textContent = "PDF를 만드는 중입니다. 잠시 기다려 주세요.";
+
+  // 캡처 중에는 화면 폭에 따라 배치가 달라지지 않도록 고정 폭을 준다.
+  const prev = { width: sheet.style.width, maxWidth: sheet.style.maxWidth,
+                 padding: sheet.style.padding, background: sheet.style.background };
   sheet.classList.add("compact");
+  sheet.style.width = "720px";
+  sheet.style.maxWidth = "720px";
+  sheet.style.padding = "8px";
+  sheet.style.background = "#ffffff";
+  window.scrollTo(0, 0);
+
   try {
-    if (!window.html2pdf) {
-      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js");
+    if (!window.html2canvas) {
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
     }
-    await window.html2pdf().set({
-      margin: [13, 14, 13, 14],
-      filename: `성격유형결과_${state.name.trim() || "결과"}_${state.result.type}.pdf`,
-      image: { type: "jpeg", quality: 0.96 },
-      html2canvas: { scale: 2, backgroundColor: "#ffffff", useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-    }).from(sheet).save();
+    if (!window.jspdf) {
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+    }
+    await new Promise((r) => setTimeout(r, 120));   // 배치가 끝나길 기다린다
+
+    const canvas = await window.html2canvas(sheet, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: 900,
+      width: sheet.scrollWidth,
+      height: sheet.scrollHeight
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 12;
+    // 가로·세로 모두 여백 안에 들어가도록 줄여서 한 장에 담는다. 잘리지 않는다.
+    const k = Math.min((pageW - margin * 2) / canvas.width,
+                       (pageH - margin * 2) / canvas.height);
+    const w = canvas.width * k;
+    const h = canvas.height * k;
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG",
+      (pageW - w) / 2, margin, w, h);
+    pdf.save(`성격유형결과_${state.name.trim() || "결과"}_${state.result.type}.pdf`);
+
     if (hint) hint.textContent = "PDF를 내려받았습니다. 파일 앱이나 다운로드 폴더에서 확인하세요.";
   } catch (e) {
     if (hint) {
-      hint.innerHTML = "이 화면에서는 파일 저장이 막혀 있습니다. " +
+      hint.textContent = "이 화면에서는 파일 저장이 막혀 있습니다. " +
         "오른쪽 위 메뉴에서 '다른 브라우저로 열기'를 고른 뒤 다시 시도해 주세요.";
     }
   } finally {
     sheet.classList.remove("compact");
+    sheet.style.width = prev.width;
+    sheet.style.maxWidth = prev.maxWidth;
+    sheet.style.padding = prev.padding;
+    sheet.style.background = prev.background;
   }
 }
 

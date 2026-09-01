@@ -151,6 +151,8 @@ a.link{display:inline-block}
 .rfoot{font-size:11.5px;line-height:1.65;color:var(--soft);margin:26px 0 0;
   border-top:1px solid var(--rule);padding-top:11px}
 @media (min-width:560px){.cols{grid-template-columns:1fr 1fr}}
+/* 캡처용 고정 폭에서도 2단을 유지한다 */
+.sheet.compact .cols{grid-template-columns:1fr 1fr}
 
 /* ── A4 한 장 배치 — 인쇄와 PDF 저장에 함께 쓴다 ─────── */
 .sheet.compact{font-size:12px;line-height:1.5;background:#fff}
