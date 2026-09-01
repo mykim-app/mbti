@@ -49,9 +49,10 @@ h1{font-size:31px;font-weight:800;letter-spacing:-.03em;line-height:1.25;margin:
 .scale{display:flex;flex-direction:column;gap:6px}
 .qt.st{text-align:center;font-size:17px;margin:6px 0 20px}
 .lik{display:flex;align-items:center;justify-content:center;gap:9px;padding:2px 0 6px}
-.lik-end{font-size:11.5px;color:var(--soft);flex:none;width:56px;line-height:1.3}
-.lik-end:first-child{text-align:right}
-.lik-end:last-child{text-align:left}
+.lik-end{font-size:14px;font-weight:600;color:var(--ink);flex:none;width:64px;
+  line-height:1.35;word-break:keep-all;overflow-wrap:normal}
+.lik-end:first-child{text-align:right;color:var(--teal)}
+.lik-end:last-child{text-align:left;color:var(--plum)}
 .dot7{border-radius:50%;background:none;cursor:pointer;flex:none;padding:0;
   transition:background .12s,transform .08s}
 .dot7:active{transform:scale(.92)}
@@ -117,11 +118,11 @@ a.link{display:inline-block}
 @media (max-width:520px){
   .qt.st{font-size:15.5px;margin-bottom:16px}
   .lik{gap:5px}
-  .lik-end{font-size:10.5px;width:36px;line-height:1.25}
-  .dot7.d1{width:36px;height:36px}
-  .dot7.d2{width:30px;height:30px}
-  .dot7.d3{width:24px;height:24px}
-  .dot7.d4{width:21px;height:21px}
+  .lik-end{font-size:12.5px;width:44px;line-height:1.3}
+  .dot7.d1{width:34px;height:34px}
+  .dot7.d2{width:28px;height:28px}
+  .dot7.d3{width:23px;height:23px}
+  .dot7.d4{width:20px;height:20px}
   .pair{grid-template-columns:1fr}
   .pair em{grid-column:1}
   .qt{font-size:15.5px}
