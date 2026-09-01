@@ -10,3 +10,6 @@ export const SUPABASE_ANON_KEY = "sb_publishable_BSnYjtOMPv6gdf7k0vnb_A_f5_Si7EP
 
 // 인증번호 입력 제한 시간(초)
 export const OTP_WINDOW_SECONDS = 60;
+
+// 메일로 오는 인증번호 자릿수. Supabase 설정에서 바꾸면 이 값도 함께 맞춥니다.
+export const OTP_LENGTH = 8;
