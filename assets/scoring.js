@@ -1,26 +1,21 @@
 import { BANK, DIMS } from "./questions.js";
 
-// 지표를 번갈아 배치하고, 홀수 번째 문항은 두 문장의 위아래를 뒤집어
-// 한쪽 위치만 계속 고르는 편향을 줄인다.
+// 지표를 번갈아 배치한다. flip 이 참인 문항은 선택지를 뒤집어 보여 주지만
+// 각 선택지가 가리키는 값은 그대로이므로 채점에는 영향이 없다.
+// 뒤집기는 위쪽만 계속 고르는 습관을 상쇄하기 위한 장치다.
 export function buildItems(perDim) {
   const list = [];
   for (let i = 0; i < perDim; i++) {
     DIMS.forEach((d, di) => {
-      list.push({
-        id: d + i,
-        dim: d,
-        a: BANK[d].items[i][0],
-        b: BANK[d].items[i][1],
-        // 지표 안에서 절반씩 뒤집히도록 문항 번호와 지표 순서를 함께 쓴다.
-        flip: (i + di) % 2 === 1
-      });
+      const it = BANK[d].items[i];
+      list.push({ id: d + i, dim: d, q: it.q, o: it.o, flip: (i + di) % 2 === 1 });
     });
   }
   return list;
 }
 
-// 선택값 0=가에 확실히, 1=가에 조금, 2=나에 조금, 3=나에 확실히
-// '확실히'는 2점, '조금'은 1점
+// 선택값 0=앞 극 강함, 1=앞 극 약함, 2=뒤 극 약함, 3=뒤 극 강함
+// '강함'은 2점, '약함'은 1점
 export function score(items, answers) {
   const raw = {};
   for (const d of DIMS) raw[d] = { a: 0, b: 0, aStrong: 0, bStrong: 0 };
@@ -28,11 +23,10 @@ export function score(items, answers) {
   for (const it of items) {
     const c = answers[it.id];
     if (c === undefined) continue;
-    const towardA = it.flip ? c >= 2 : c <= 1;
     const strong = c === 0 || c === 3;
     const w = strong ? 2 : 1;
     const r = raw[it.dim];
-    if (towardA) {
+    if (c <= 1) {
       r.a += w;
       if (strong) r.aStrong++;
     } else {

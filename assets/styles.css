@@ -44,6 +44,15 @@ h1{font-size:31px;font-weight:800;letter-spacing:-.03em;line-height:1.25;margin:
 .tag{flex:none;width:21px;height:21px;border-radius:50%;border:1px solid var(--rule);
   font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;
   margin-top:2px;color:var(--soft)}
+.guide{font-size:12.5px;color:var(--soft);margin:0 0 6px}
+.qt{font-size:16px;font-weight:700;line-height:1.55;margin:0 0 14px;letter-spacing:-.01em}
+.scale{display:flex;flex-direction:column;gap:6px}
+.sc{width:100%;text-align:left;font-family:inherit;font-size:14px;color:var(--ink);
+  background:var(--card);border:1px solid var(--rule);border-radius:3px;
+  padding:12px 15px;cursor:pointer;transition:background .12s,border-color .12s}
+.sc:hover{background:#F2F4F1}
+.sc[aria-pressed="true"]{background:var(--ink);color:#fff;font-weight:700;
+  border-color:var(--ink)}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:15px}
 .opt{border:1px solid var(--rule);background:var(--card);border-radius:3px;padding:11px 8px;
   font-family:inherit;font-size:13px;color:var(--ink);cursor:pointer;text-align:center;
@@ -85,7 +94,8 @@ a.link{display:inline-block}
   background:var(--card);font-variant-numeric:tabular-nums}
 .hide{display:none}
 @media (max-width:520px){
-  .opts{grid-template-columns:1fr}
+  .qt{font-size:15.5px}
+  .sc{font-size:13.5px;padding:12px 13px}
   .type{font-size:48px}
   .modes{flex-direction:column}
 }

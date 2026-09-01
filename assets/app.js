@@ -4,7 +4,6 @@ import { buildItems, score } from "./scoring.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 const app = document.getElementById("app");
-const OPT_LABELS = ["가에 확실히 가깝다", "가에 조금 가깝다", "나에 조금 가깝다", "나에 확실히 가깝다"];
 const PER_PAGE = 5;
 
 const configured = !SUPABASE_URL.includes("여기에") && !SUPABASE_ANON_KEY.includes("여기에");
@@ -19,7 +18,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
 function renderIntro() {
   app.innerHTML = `
     <h1>성격유형 검사</h1>
-    <p class="lead">두 문장 중 자신에게 가까운 쪽을 고르고, 얼마나 가까운지까지 함께 표시합니다.
+    <p class="lead">각 질문마다 네 개의 답 중 자신에게 가장 가까운 하나를 고릅니다.
       직장에서의 모습보다 <b>평소 편할 때의 나</b>를 기준으로, 오래 고민하지 말고 첫 반응대로 골라 주세요.</p>
 
     ${configured ? "" : `<div class="err">Supabase 접속 정보가 설정되지 않았습니다.
@@ -86,17 +85,17 @@ function renderQuiz() {
       </div>
       <div class="track"><div class="fill" style="width:${pct}%"></div></div>
     </div>
+    <p class="guide">네 개 중 자신에게 가장 가까운 하나를 고르세요.</p>
     ${slice.map((it) => {
       const no = items.indexOf(it) + 1;
-      const top = it.flip ? it.b : it.a;
-      const bottom = it.flip ? it.a : it.b;
+      const cur = state.answers[it.id];
+      const order = it.flip ? [3, 2, 1, 0] : [0, 1, 2, 3];
       return `<div class="q">
         <div class="q-no">${String(no).padStart(2, "0")}</div>
-        <div class="stmt"><span class="tag">가</span><span>${esc(top)}</span></div>
-        <div class="stmt"><span class="tag">나</span><span>${esc(bottom)}</span></div>
-        <div class="opts">${OPT_LABELS.map((lb, ci) =>
-          `<button class="opt" data-id="${it.id}" data-c="${ci}"
-            aria-pressed="${state.answers[it.id] === ci}">${lb}</button>`).join("")}</div>
+        <p class="qt">${esc(it.q)}</p>
+        <div class="scale">${order.map((c) =>
+          `<button class="sc" data-id="${it.id}" data-c="${c}"
+            aria-pressed="${cur === c}">${esc(it.o[c])}</button>`).join("")}</div>
       </div>`;
     }).join("")}
     <div class="nav">
@@ -113,10 +112,11 @@ function renderQuiz() {
     hint.textContent = ok ? "" : "이 쪽의 문항을 모두 선택하면 넘어갑니다.";
   };
 
-  app.querySelectorAll(".opt").forEach((b) =>
+  app.querySelectorAll(".sc").forEach((b) =>
     b.addEventListener("click", () => {
-      state.answers[b.dataset.id] = Number(b.dataset.c);
-      app.querySelectorAll(`.opt[data-id="${b.dataset.id}"]`)
+      const id = b.dataset.id;
+      state.answers[id] = Number(b.dataset.c);
+      app.querySelectorAll(`.sc[data-id="${id}"]`)
         .forEach((o) => o.setAttribute("aria-pressed", o === b));
       const d = state.items.filter((i) => state.answers[i.id] !== undefined).length;
       document.querySelector(".prog-num").textContent = `${d} / ${state.items.length}`;
