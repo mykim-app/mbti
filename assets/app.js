@@ -250,9 +250,13 @@ function renderResult() {
     </div>`;
   }).join("");
 
-  const pair = (arr, cls) => (arr || []).map(([t, why, kind]) =>
-    `<div class="pair ${cls}"><b>${t}</b><span>${esc(why)}</span>
-      <em>${esc(kind)} · ${(TYPE_INFO[t] || [""])[0]}</em></div>`).join("");
+  const pair = (arr, cls) => (arr || []).map(([t, why, kind, pct], i) =>
+    `<div class="pair ${cls}">
+      <b><span class="rank">${i + 1}순위</span> ${t}</b>
+      <span class="pct">${pct}%</span>
+      <span class="pwhy">${esc(why)}</span>
+      <em>${esc(kind)} · ${(TYPE_INFO[t] || [""])[0]}</em>
+    </div>`).join("");
 
   app.innerHTML = `
   <div class="sheet">
@@ -294,12 +298,16 @@ function renderResult() {
     <section class="blk">
       <h2 class="sec">어울리는 일</h2>
       <p class="jenv">${esc(job.env || "")}</p>
-      <div class="chips">${(job.jobs || []).map((j) => `<span class="jchip">${esc(j)}</span>`).join("")}</div>
+      <ol class="jrank">${(job.jobs || []).slice(0, 3).map((j) =>
+        `<li><span class="jno"></span>${esc(j)}</li>`).join("")}</ol>
+      ${(job.jobs || []).length > 3 ? `<p class="sub">그 밖에 살펴볼 만한 일</p>
+      <div class="chips">${job.jobs.slice(3).map((j) =>
+        `<span class="jchip">${esc(j)}</span>`).join("")}</div>` : ""}
     </section>
 
     <p class="rfoot">${state.items.length}문항 기준의 참고 결과입니다.
       같은 사람이 몇 주 뒤 다시 하면 한 지표가 바뀌기도 합니다.
-      궁합과 어울리는 일은 통계로 검증된 것이 아니므로 관계나 진로를 정하는 근거로 쓰지 않습니다.</p>
+      궁합의 백분율은 통계 조사값이 아니라 네 지표의 조합으로 매긴 참고 점수이며, 순위 역시 그 값에 따른 것입니다. 관계나 진로를 정하는 근거로 쓰지 않습니다.</p>
   </div>
 
   ${close.length ? `<div class="note noprint">${close.map((d) =>

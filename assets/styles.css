@@ -110,12 +110,24 @@ a.link{display:inline-block}
 .rlist li{font-size:14.5px;line-height:1.7;margin-bottom:6px}
 .rlist li b{font-weight:700}
 .pairs{display:flex;flex-direction:column;gap:7px}
-.pair{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:baseline;
+.pair{display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:baseline;
   border:1px solid var(--rule);border-left-width:4px;border-radius:3px;
   background:var(--card);padding:11px 14px}
 .pair b{font-size:15px;font-weight:800;letter-spacing:.04em}
-.pair span{font-size:13.5px;line-height:1.55}
-.pair em{grid-column:2;font-style:normal;font-size:11.5px;color:var(--soft)}
+.rank{font-size:11px;font-weight:700;letter-spacing:0;color:var(--soft);
+  border:1px solid var(--rule);border-radius:2px;padding:1px 5px;margin-right:5px}
+.pct{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;text-align:right}
+.fitp .pct{color:var(--teal)}
+.hardp .pct{color:var(--plum)}
+.pwhy{grid-column:1 / -1;font-size:13.5px;line-height:1.55}
+.pair em{grid-column:1 / -1;font-style:normal;font-size:11.5px;color:var(--soft)}
+.jrank{margin:0 0 14px;padding:0;list-style:none;counter-reset:jr}
+.jrank li{counter-increment:jr;display:flex;align-items:baseline;gap:10px;
+  font-size:14.5px;padding:8px 0;border-bottom:1px solid var(--rule)}
+.jrank li:first-child{border-top:1px solid var(--rule)}
+.jno::before{content:counter(jr);font-size:12px;font-weight:800;color:var(--teal);
+  border:1px solid var(--teal);border-radius:50%;width:19px;height:19px;
+  display:inline-flex;align-items:center;justify-content:center;flex:none}
 .fitp{border-left-color:var(--teal)}
 .hardp{border-left-color:var(--plum)}
 .dotlink{color:#EBEAE4;text-decoration:none;font-size:20px;line-height:1;
@@ -159,10 +171,15 @@ a.link{display:inline-block}
 .compact .rlist li{font-size:12px;line-height:1.5;margin-bottom:4px}
 .compact .sub{font-size:10.5px;margin:0 0 7px}
 .compact .pairs{gap:5px}
-.compact .pair{padding:7px 10px;border-left-width:3px;gap:3px 10px}
+.compact .pair{padding:7px 10px;border-left-width:3px;gap:2px 8px}
 .compact .pair b{font-size:12.5px}
-.compact .pair span{font-size:11px;line-height:1.4}
+.compact .rank{font-size:9.5px;padding:0 4px}
+.compact .pct{font-size:13.5px}
+.compact .pwhy{font-size:11px;line-height:1.4}
 .compact .pair em{font-size:10px;line-height:1.3}
+.compact .jrank{margin-bottom:9px}
+.compact .jrank li{font-size:11.5px;padding:5px 0;gap:8px}
+.compact .jno::before{width:16px;height:16px;font-size:10px}
 .compact .jenv{font-size:11px;margin-bottom:8px}
 .compact .chips{gap:5px}
 .compact .jchip{font-size:11px;padding:4px 10px}
