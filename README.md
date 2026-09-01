@@ -28,11 +28,11 @@ supabase/schema.sql   테이블과 접근 권한 설정
 
 1. supabase.com 에 가입하고 새 프로젝트를 만듭니다. 지역은 Northeast Asia (Seoul)를 고릅니다.
 2. 왼쪽 메뉴 **SQL Editor** 에서 `supabase/schema.sql` 내용을 붙여 넣고 실행합니다.
-   - 관리자 주소를 `mykim@igc.or.kr` 이 아닌 것으로 바꾸려면 SQL 안의 이메일 두 곳을 먼저 고칩니다.
+   - 관리자 주소를 `등록메일` 이 아닌 것으로 바꾸려면 SQL 안의 이메일 두 곳을 먼저 고칩니다.
 
 ### 2. 관리자 계정 등록
 
-**Authentication > Users > Add user** 에서 `mykim@igc.or.kr` 을 등록합니다.
+**Authentication > Users > Add user** 에서 `등록메일` 을 등록합니다.
 비밀번호는 아무 값이나 넣어도 됩니다. 이 사이트는 비밀번호를 쓰지 않고
 인증번호로만 로그인합니다. 미리 등록된 주소가 아니면 인증번호 발송 자체가
 거부되므로, 다른 사람이 관리자 화면에 접근할 수 없습니다.
