@@ -1,10 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SUPABASE_URL, SUPABASE_ANON_KEY, ADMIN_EMAIL, OTP_WINDOW_SECONDS } from "./config.js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, OTP_WINDOW_SECONDS } from "./config.js";
 
 const app = document.getElementById("app");
 const configured = !SUPABASE_URL.includes("여기에") && !SUPABASE_ANON_KEY.includes("여기에");
 const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
+let email = "";      // 화면에서 직접 입력받는다. 코드에 주소를 넣어두지 않는다.
 let timer = null;
 let rows = [];
 let query = "";
@@ -12,35 +13,47 @@ let query = "";
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const stopTimer = () => { if (timer) { clearInterval(timer); timer = null; } };
+const valid = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 /* ── 1단계: 인증번호 요청 ──────────────────────────────── */
 function renderRequest(msg, isError) {
   stopTimer();
   app.innerHTML = `
     <h1>관리자 확인</h1>
-    <p class="lead">관리자 메일함으로 여섯 자리 인증번호를 보냅니다.
+    <p class="lead">등록된 관리자 주소로 여섯 자리 인증번호를 보냅니다.
       번호는 발송 후 ${OTP_WINDOW_SECONDS}초 안에 입력해야 합니다.</p>
     ${configured ? "" : `<div class="err">Supabase 접속 정보가 설정되지 않았습니다.
       <code>assets/config.js</code> 를 먼저 채워 주세요.</div>`}
     <div class="field">
-      <label class="label">받는 주소</label>
-      <input class="input" value="${esc(ADMIN_EMAIL)}" readonly>
+      <label class="label" for="em">이메일 주소</label>
+      <input id="em" class="input" type="email" inputmode="email"
+        autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="">
     </div>
     ${msg ? `<div class="${isError ? "err" : "ok"}">${esc(msg)}</div>` : ""}
     <div class="row">
       <button class="btn" id="send" ${configured ? "" : "disabled"}>인증번호 받기</button>
       <a class="link" href="./index.html">검사 화면으로</a>
     </div>`;
+
+  const em = document.getElementById("em");
+  em.value = "";
+  em.focus();
+  em.addEventListener("keydown", (e) => { if (e.key === "Enter") sendCode(); });
   document.getElementById("send").addEventListener("click", sendCode);
 }
 
 async function sendCode() {
+  const em = document.getElementById("em");
+  const v = (em ? em.value : "").trim();
+  if (!valid(v)) return renderRequest("이메일 주소를 정확히 입력하세요.", true);
+  email = v;
+
   const btn = document.getElementById("send");
   if (btn) { btn.disabled = true; btn.textContent = "보내는 중"; }
+
   // emailRedirectTo 를 넣지 않아야 링크가 아닌 숫자 인증번호가 발송된다.
   const { error } = await sb.auth.signInWithOtp({
-    email: ADMIN_EMAIL,
-    options: { shouldCreateUser: false }
+    email, options: { shouldCreateUser: false }
   });
   if (error) return renderRequest("인증번호를 보내지 못했습니다. " + error.message, true);
   renderVerify();
@@ -51,7 +64,7 @@ function renderVerify(msg) {
   stopTimer();
   app.innerHTML = `
     <h1>인증번호 입력</h1>
-    <p class="lead">${esc(ADMIN_EMAIL)} 로 보낸 여섯 자리 숫자를 입력하세요.</p>
+    <p class="lead">메일로 보낸 여섯 자리 숫자를 입력하세요.</p>
     <div class="field">
       <input id="code" class="input otp" inputmode="numeric" autocomplete="one-time-code"
         maxlength="6" placeholder="000000">
@@ -91,7 +104,7 @@ function renderVerify(msg) {
     const token = codeEl.value.replace(/\D/g, "");
     if (token.length !== 6) return renderVerify("여섯 자리 숫자를 입력하세요.");
     okBtn.disabled = true;
-    const { error } = await sb.auth.verifyOtp({ email: ADMIN_EMAIL, token, type: "email" });
+    const { error } = await sb.auth.verifyOtp({ email, token, type: "email" });
     if (error) return renderVerify("인증에 실패했습니다. " + error.message);
     stopTimer();
     openList();
@@ -198,6 +211,7 @@ function exportCsv(list) {
 
 async function signOut() {
   await sb.auth.signOut();
+  email = "";
   renderRequest("로그아웃했습니다.", false);
 }
 
