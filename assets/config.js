@@ -8,8 +8,5 @@
 export const SUPABASE_URL = "https://vewmmndhipvazzmttzzr.supabase.co";
 export const SUPABASE_ANON_KEY = "sb_publishable_BSnYjtOMPv6gdf7k0vnb_A_f5_Si7EP";
 
-// 관리자 이메일. schema.sql 의 RLS 정책에 적은 주소와 반드시 같아야 합니다.
-export const ADMIN_EMAIL = "mykim@igc.or.kr";
-
 // 인증번호 입력 제한 시간(초)
 export const OTP_WINDOW_SECONDS = 60;
