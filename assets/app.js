@@ -39,8 +39,9 @@ function renderIntro() {
 
     <button class="btn" id="start" disabled>검사 시작</button>
 
-    <div class="note">입력한 이름과 검사 결과가 저장되며, 관리자만 목록을 확인합니다.
-      검사 결과는 자기 이해를 돕는 참고 자료이며 채용·인사·평가의 근거로 쓰지 않습니다.</div>
+    <div class="note">정답이 없는 검사입니다. 오래 고민할수록 실제 성향과 멀어지니
+      각 문항에서 처음 눈에 들어온 답을 고르세요. 끝까지 답하면 유형과 지표별 기울기,
+      강점과 눈여겨볼 점, 다른 유형과의 궁합, 어울리는 일까지 함께 보여 드립니다.</div>
 
     <div class="foot">
       <span style="font-size:12.5px;color:var(--soft)">4지표 강도 채점</span>
