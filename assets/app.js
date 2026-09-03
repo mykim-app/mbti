@@ -22,7 +22,7 @@ const LIK_LABEL = { 3: "매우 그렇다", 2: "그렇다", 1: "조금 그렇다"
 const configured = !SUPABASE_URL.includes("여기에") && !SUPABASE_ANON_KEY.includes("여기에");
 const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-const state = { name: "", blood: "", zodiac: "", birth: "", format: "choice", perDim: 20, noAuto: false, moving: false, items: [], answers: {}, page: 0, result: null, saved: null };
+const state = { name: "", blood: "", zodiac: "", birth: "", format: "normal", perDim: 20, noAuto: false, moving: false, items: [], answers: {}, page: 0, result: null, saved: null };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -31,10 +31,10 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
 function renderIntro() {
   app.innerHTML = `
     <h1>성격유형 검사 <span class="ver">v${VERSION}</span></h1>
-    <p class="lead">${state.format === "scale"
-      ? "문장을 읽고 얼마나 그런지 일곱 단계 중 하나를 고릅니다."
+    <p class="lead">${state.format === "simple"
+      ? "문장을 읽고 얼마나 그런지 일곱 단계 중 하나를 고릅니다. 가장 빠르게 끝납니다."
       : state.format === "deep"
-      ? "두 가지 방식이 섞여 나옵니다. 네 개 중 고르는 문항과 일곱 단계로 표시하는 문항이 번갈아 나옵니다."
+      ? "두 가지 방식이 섞여 나옵니다. 문항이 많은 만큼 지표의 기울기가 더 촘촘하게 잡히고, 혈액형·별자리를 함께 볼 수 있습니다."
       : "각 질문마다 네 개의 답 중 자신에게 가장 가까운 하나를 고릅니다."}
       직장에서의 모습보다 <b>평소 편할 때의 나</b>를 기준으로, 오래 고민하지 말고 첫 반응대로 골라 주세요.</p>
 
@@ -48,10 +48,10 @@ function renderIntro() {
 
     <label class="label">검사 방식</label>
     <div class="modes modes3">
-      <button class="mode" data-fmt="choice" aria-pressed="${state.format === "choice"}">
+      <button class="mode" data-fmt="simple" aria-pressed="${state.format === "simple"}">
+        <b>단순형 40문항</b><span>문장마다 그렇다 정도 표시 · 약 5분</span></button>
+      <button class="mode" data-fmt="normal" aria-pressed="${state.format === "normal"}">
         <b>일반형 80문항</b><span>상황마다 네 답 중 하나 · 약 12분</span></button>
-      <button class="mode" data-fmt="scale" aria-pressed="${state.format === "scale"}">
-        <b>척도형 80문항</b><span>문장마다 그렇다 정도 표시 · 약 10분</span></button>
       <button class="mode" data-fmt="deep" aria-pressed="${state.format === "deep"}">
         <b>심화형 120문항</b><span>두 방식 절반씩 · 혈액형·별자리 함께 · 약 18분</span></button>
     </div>
@@ -162,8 +162,8 @@ async function showToday() {
 
 function start() {
   state.items = state.format === "deep" ? buildDeepItems(15)
-    : state.format === "scale" ? buildScaleItems(state.perDim)
-    : buildItems(state.perDim);
+    : state.format === "simple" ? buildScaleItems(10)
+    : buildItems(20);
   state.answers = {};
   state.page = 0;
   state.noAuto = false;
@@ -189,7 +189,7 @@ function renderQuiz() {
       </div>
       <div class="track"><div class="fill" style="width:${pct}%"></div></div>
     </div>
-    ${state.format === "scale" ? ""
+    ${slice.every((i) => i.scale) ? ""
       : `<p class="guide">네 개 중 자신에게 가장 가까운 하나를 고르세요. 한 쪽을 다 채우면 다음 쪽으로 넘어갑니다.</p>`}
     ${slice.map((it) => {
       const no = items.indexOf(it) + 1;
@@ -295,7 +295,7 @@ function scrollToNext(fromEl, slice) {
 /* ── 결과 ──────────────────────────────────────────────── */
 async function finish() {
   state.result = state.format === "deep" ? scoreDeep(state.items, state.answers)
-    : state.format === "scale" ? scoreScale(state.items, state.answers)
+    : state.format === "simple" ? scoreScale(state.items, state.answers)
     : score(state.items, state.answers);
   renderResult();
   window.scrollTo(0, 0);
