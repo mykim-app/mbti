@@ -1,12 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL, TYPE_MATCH, TYPE_JOB } from "./questions.js";
+import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL, TYPE_MATCH, TYPE_JOB,
+  BLOOD, ZODIAC, zodiacOf } from "./questions.js";
 import { buildItems, score, buildScaleItems, scoreScale, matchTable } from "./scoring.js";
 import { fortune } from "./fortune.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 const app = document.getElementById("app");
 const PER_PAGE = 5;
-const VERSION = "2.0";
+const VERSION = "3.0";
 const LIK = [
   { v: 3, size: "d1", side: "ya" }, { v: 2, size: "d2", side: "ya" },
   { v: 1, size: "d3", side: "ya" }, { v: 0, size: "d4", side: "mid" },
@@ -19,7 +20,7 @@ const LIK_LABEL = { 3: "매우 그렇다", 2: "그렇다", 1: "조금 그렇다"
 const configured = !SUPABASE_URL.includes("여기에") && !SUPABASE_ANON_KEY.includes("여기에");
 const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-const state = { name: "", format: "choice", perDim: 20, noAuto: false, moving: false, items: [], answers: {}, page: 0, result: null, saved: null };
+const state = { name: "", blood: "", zodiac: "", birth: "", format: "choice", perDim: 20, noAuto: false, moving: false, items: [], answers: {}, page: 0, result: null, saved: null };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -40,6 +41,28 @@ function renderIntro() {
       <label class="label" for="nm">이름</label>
       <input id="nm" class="input" maxlength="20" placeholder="예: 홍길동" autocomplete="name">
     </div>
+
+    <label class="label" for="bl">혈액형 <span class="opt-mark">선택</span></label>
+    <div class="chipset" id="bl">
+      ${["A", "B", "O", "AB"].map((b) =>
+        `<button class="cbtn" data-blood="${b}" aria-pressed="${state.blood === b}">${b}형</button>`).join("")}
+      <button class="cbtn" data-blood="" aria-pressed="${!state.blood}">모름</button>
+    </div>
+
+    <label class="label">별자리 <span class="opt-mark">선택</span></label>
+    <div class="zrow">
+      <select class="input" id="zsel">
+        <option value="">고르지 않음</option>
+        ${ZODIAC.map((z) =>
+          `<option value="${z.key}" ${state.zodiac === z.key ? "selected" : ""}>${z.label}</option>`).join("")}
+      </select>
+      <span class="zor">또는 생일로</span>
+      <input class="input" id="zbirth" type="text" inputmode="numeric" maxlength="5"
+        placeholder="09-03" value="${esc(state.birth)}">
+    </div>
+    <p class="zhint" id="zhint">${state.zodiac
+      ? "선택한 별자리: " + (ZODIAC.find((z) => z.key === state.zodiac) || {}).label
+      : "별자리를 모르면 생일을 월-일 형식으로 넣으면 자동으로 정해집니다."}</p>
 
     <label class="label">검사 방식</label>
     <div class="modes">
@@ -67,6 +90,39 @@ function renderIntro() {
   nm.addEventListener("input", sync);
   nm.addEventListener("keydown", (e) => { if (e.key === "Enter" && nm.value.trim()) start(); });
   sync();
+
+  app.querySelectorAll(".cbtn").forEach((b) =>
+    b.addEventListener("click", () => {
+      state.blood = b.dataset.blood;
+      app.querySelectorAll(".cbtn").forEach((o) =>
+        o.setAttribute("aria-pressed", o === b));
+    }));
+
+  const zsel = document.getElementById("zsel");
+  const zbirth = document.getElementById("zbirth");
+  const zhint = document.getElementById("zhint");
+  zsel.addEventListener("change", () => {
+    state.zodiac = zsel.value;
+    if (state.zodiac) { state.birth = ""; zbirth.value = ""; }
+    zhint.textContent = state.zodiac
+      ? "선택한 별자리: " + (ZODIAC.find((z) => z.key === state.zodiac) || {}).label
+      : "별자리를 모르면 생일을 월-일 형식으로 넣으면 자동으로 정해집니다.";
+  });
+  zbirth.addEventListener("input", () => {
+    state.birth = zbirth.value;
+    const n = zbirth.value.replace(/\D/g, "");
+    if (n.length < 3) { zhint.textContent = "월과 일을 넣으면 별자리가 정해집니다. 예: 09-03"; return; }
+    const m = Number(n.slice(0, n.length - 2));
+    const d = Number(n.slice(-2));
+    const z = m >= 1 && m <= 12 && d >= 1 && d <= 31 ? zodiacOf(m, d) : null;
+    if (z) {
+      state.zodiac = z.key;
+      zsel.value = z.key;
+      zhint.textContent = `${m}월 ${d}일 → ${z.label}`;
+    } else {
+      zhint.textContent = "그런 날짜는 없습니다. 월-일 형식으로 다시 넣어 주세요.";
+    }
+  });
 
   app.querySelectorAll(".mode").forEach((b) =>
     b.addEventListener("click", () => {
@@ -217,6 +273,8 @@ async function finish() {
   const d = state.result.dims;
   const { error } = await sb.from("mbti_results").insert({
     name: state.name.trim(),
+    blood_type: state.blood || null,
+    zodiac: state.zodiac || null,
     mbti_type: state.result.type,
     question_count: state.items.length,
     ei_e: d.EI.a, ei_i: d.EI.b,
@@ -226,6 +284,35 @@ async function finish() {
   });
   state.saved = error ? { ok: false, msg: error.message } : { ok: true };
   renderResult();
+}
+
+// 앞말의 받침을 보고 은/는 을 고른다. "처녀자리는", "A형은"
+function eun(word) {
+  const ch = String(word).trim().slice(-1);
+  const code = ch.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return "은";      // 한글이 아니면 그대로
+  return (code - 0xac00) % 28 === 0 ? "는" : "은";
+}
+
+// 혈액형·별자리 통설이 가리키는 방향과 검사 결과를 지표별로 맞춰 본다.
+function mixLines(type, bl, zo) {
+  const mine = { EI: type[0], SN: type[1], TF: type[2], JP: type[3] };
+  const same = [], diff = [];
+  const check = (src, name) => {
+    if (!src) return;
+    for (const d of DIMS) {
+      const want = (src.lean || {})[d];
+      if (!want) continue;
+      const nm = BANK[d].name[BANK[d].poles.indexOf(want)];
+      const line = `${name}${eun(name)} ${nm}(${want}) 쪽을 가리킵니다`;
+      (want === mine[d] ? same : diff).push(
+        want === mine[d] ? line + " — 검사 결과와 같습니다"
+                         : line + `, 검사 결과는 ${BANK[d].name[BANK[d].poles.indexOf(mine[d])]}(${mine[d]})입니다`);
+    }
+  };
+  check(bl, bl ? bl.label : "");
+  check(zo, zo ? zo.label : "");
+  return { same, diff };
 }
 
 function analysisLine(dims) {
@@ -341,7 +428,10 @@ function renderResult() {
   const job = TYPE_JOB[type] || { jobs: [] };
   const match = TYPE_MATCH[type] || { fit: [], hard: [] };
   const table = matchTable(type, Object.keys(TYPE_INFO));
-  const fo = fortune(type, detail);
+  const bl = BLOOD[state.blood] || null;
+  const zo = ZODIAC.find((z) => z.key === state.zodiac) || null;
+  const extra = mixLines(type, bl, zo);
+  const fo = fortune(type + (state.blood || "") + (state.zodiac || ""), detail);
   const close = DIMS.filter((d) => dims[d].pctA >= 42 && dims[d].pctA <= 58);
   const today = new Date().toLocaleDateString("ko-KR");
 
@@ -389,7 +479,8 @@ function renderResult() {
         <div class="type">${type}</div>
         <div class="type-sub">${info[0]}</div>
       </div>
-      <div class="rmeta">${today}<br>${state.items.length}문항</div>
+      <div class="rmeta">${today}<br>${state.items.length}문항${
+        (bl || zo) ? "<br>" + [bl && bl.label, zo && zo.label].filter(Boolean).join(" · ") : ""}</div>
     </header>
     <p class="rdesc">${info[1]}</p>
     </div>
@@ -426,6 +517,33 @@ function renderResult() {
       ${mtable(table.slice(0, 8))}
     </section>
     <div class="pb mtail">${mtable(table.slice(8))}</div>
+
+    ${(bl || zo) ? `<section class="blk pb">
+      <h2 class="sec">혈액형 · 별자리와 함께 보기</h2>
+      <div class="mixhead">
+        ${bl ? `<span class="mixtag">${bl.label}</span>` : ""}
+        ${zo ? `<span class="mixtag">${zo.label}</span>` : ""}
+      </div>
+      ${bl ? `<p class="mixdesc"><b>${bl.label}</b> ${bl.desc}</p>` : ""}
+      ${zo ? `<p class="mixdesc"><b>${zo.label}</b> ${zo.desc}</p>` : ""}
+      <div class="cols">
+        <div>
+          <p class="sub">검사 결과와 맞물리는 점</p>
+          ${extra.same.length
+            ? `<ul class="rlist">${extra.same.map((t) => `<li>${t}</li>`).join("")}</ul>`
+            : `<p class="mixnone">겹치는 지표가 없습니다.</p>`}
+        </div>
+        <div>
+          <p class="sub">엇갈리는 점</p>
+          ${extra.diff.length
+            ? `<ul class="rlist">${extra.diff.map((t) => `<li>${t}</li>`).join("")}</ul>`
+            : `<p class="mixnone">엇갈리는 지표가 없습니다.</p>`}
+        </div>
+      </div>
+      <p class="mixfoot">혈액형과 별자리로 성격을 나누는 것은 널리 알려진 이야기일 뿐,
+        연구로 확인된 바가 없습니다. 엇갈린다고 해서 어느 쪽이 틀린 것도 아닙니다.
+        재미로 견주어 보는 자리로 봐 주세요.</p>
+    </section>` : ""}
 
     <section class="blk pb">
       <h2 class="sec">어울리는 일</h2>

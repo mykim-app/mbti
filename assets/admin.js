@@ -10,6 +10,10 @@ let timer = null;
 let rows = [];
 let query = "";
 
+const ZLABEL = { aries: "양자리", taurus: "황소자리", gemini: "쌍둥이자리", cancer: "게자리",
+  leo: "사자자리", virgo: "처녀자리", libra: "천칭자리", scorpio: "전갈자리",
+  sagittarius: "사수자리", capricorn: "염소자리", aquarius: "물병자리", pisces: "물고기자리" };
+
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const stopTimer = () => { if (timer) { clearInterval(timer); timer = null; } };
@@ -150,11 +154,14 @@ function renderList() {
       `<span class="chip">${t} ${n}</span>`).join("")}</div>` : ""}
     ${list.length === 0 ? `<p class="lead">표시할 기록이 없습니다.</p>` : `
     <div class="scroll"><table class="tbl">
-      <thead><tr><th>이름</th><th>유형</th><th>E·I</th><th>S·N</th><th>T·F</th><th>J·P</th>
+      <thead><tr><th>이름</th><th>유형</th><th>혈액형</th><th>별자리</th>
+        <th>E·I</th><th>S·N</th><th>T·F</th><th>J·P</th>
         <th>문항</th><th>검사일시</th><th></th></tr></thead>
       <tbody>${list.map((r) => `<tr>
         <td>${esc(r.name)}</td>
         <td style="font-weight:700;letter-spacing:.04em">${esc(r.mbti_type)}</td>
+        <td>${r.blood_type ? esc(r.blood_type) + "형" : "—"}</td>
+        <td>${r.zodiac ? esc(ZLABEL[r.zodiac] || r.zodiac) : "—"}</td>
         <td class="num">${r.ei_e}:${r.ei_i}</td>
         <td class="num">${r.sn_s}:${r.sn_n}</td>
         <td class="num">${r.tf_t}:${r.tf_f}</td>
@@ -195,12 +202,13 @@ async function remove(id) {
 }
 
 function exportCsv(list) {
-  const head = ["검사일시", "이름", "유형", "문항수", "E", "I", "S", "N", "T", "F", "J", "P"];
+  const head = ["검사일시", "이름", "유형", "혈액형", "별자리", "문항수",
+    "E", "I", "S", "N", "T", "F", "J", "P"];
   const lines = [head.join(",")];
   for (const r of list) {
     lines.push([
       new Date(r.created_at).toLocaleString("ko-KR"),
-      r.name, r.mbti_type, r.question_count,
+      r.name, r.mbti_type, r.blood_type || "", ZLABEL[r.zodiac] || "", r.question_count,
       r.ei_e, r.ei_i, r.sn_s, r.sn_n, r.tf_t, r.tf_f, r.jp_j, r.jp_p
     ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
   }

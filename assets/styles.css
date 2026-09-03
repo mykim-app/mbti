@@ -266,3 +266,32 @@ a.link{display:inline-block}
 .mtail{margin-top:2px}
 .mtail .mt thead{display:none}
 .compact .mtail{margin-top:1px}
+
+/* ── 혈액형 · 별자리 ───────────────────────────────────── */
+.opt-mark{font-size:11px;font-weight:400;color:var(--soft);margin-left:4px}
+.chipset{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px}
+.cbtn{border:1px solid var(--rule);background:var(--card);border-radius:20px;
+  padding:9px 17px;font-family:inherit;font-size:14px;color:var(--ink);cursor:pointer}
+.cbtn:hover{background:#F2F4F1}
+.cbtn[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+.zrow{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.zrow .input{flex:1 1 150px;min-width:0}
+.zrow #zbirth{flex:0 0 110px;text-align:center;font-variant-numeric:tabular-nums}
+.zor{font-size:12.5px;color:var(--soft);flex:none}
+.zhint{font-size:12.5px;color:var(--soft);margin:8px 0 18px;line-height:1.5}
+.mixhead{display:flex;gap:7px;margin-bottom:12px}
+.mixtag{border:1px solid var(--teal);color:var(--teal);border-radius:20px;
+  padding:4px 13px;font-size:13px;font-weight:700}
+.mixdesc{font-size:14px;line-height:1.65;margin:0 0 8px;color:var(--soft)}
+.mixdesc b{color:var(--ink);margin-right:5px}
+.mixnone{font-size:13.5px;color:var(--soft);margin:0}
+.mixfoot{font-size:11.5px;color:var(--soft);line-height:1.55;margin:14px 0 0}
+.compact .mixtag{font-size:11px;padding:3px 10px}
+.compact .mixdesc{font-size:11.5px;line-height:1.55;margin-bottom:6px}
+.compact .mixfoot{font-size:9.5px;margin-top:9px}
+.compact .mixnone{font-size:11px}
+@media (max-width:520px){
+  .zrow{flex-direction:column;align-items:stretch}
+  .zrow #zbirth{flex:1 1 auto}
+  .zor{text-align:center}
+}

@@ -931,3 +931,55 @@ export const TYPE_JOB = {
   ENTJ: { env: "목표를 정하고 자원을 움직여 성과를 내는 자리. 결정할 수 있는 위치일수록 제 몫을 합니다.",
     jobs: ["경영·관리", "사업개발", "프로젝트 총괄", "조직 총괄", "금융·투자", "구조조정·혁신"] }
 };
+
+/* ── 혈액형 · 별자리 ───────────────────────────────────────
+   두 가지 모두 성격과의 연관이 과학으로 확인된 바 없는 통설이다.
+   lean 은 그 통설이 가리키는 방향을 네 지표에 얹어 본 것으로,
+   검사 결과와 어디가 맞물리고 어디가 엇갈리는지 보여 주는 데만 쓴다. */
+
+export const BLOOD = {
+  A:  { label: "A형",  desc: "꼼꼼하고 신중하다는 말을 듣는 쪽입니다. 남을 배려하느라 자기 말을 늦게 꺼내는 편이라고 이야기됩니다.",
+        lean: { EI: "I", TF: "F", JP: "J" } },
+  B:  { label: "B형",  desc: "자기 관심사에 몰입하고 틀에 매이지 않는 쪽으로 이야기됩니다. 마음이 가는 대로 움직인다는 말을 듣습니다.",
+        lean: { EI: "E", SN: "N", JP: "P" } },
+  O:  { label: "O형",  desc: "목표가 서면 밀고 나가는 쪽으로 이야기됩니다. 사람들 사이에서 앞에 서는 일이 잦다고 합니다.",
+        lean: { EI: "E", TF: "T", JP: "J" } },
+  AB: { label: "AB형", desc: "상황에 따라 다른 면이 나온다는 말을 듣는 쪽입니다. 한발 떨어져 보는 시선이 있다고 이야기됩니다.",
+        lean: { EI: "I", SN: "N", TF: "T" } }
+};
+
+export const ZODIAC = [
+  { key: "aries",       label: "양자리",     range: [3, 21, 4, 19],
+    desc: "먼저 움직이고 부딪히며 길을 내는 쪽으로 이야기됩니다.", lean: { EI: "E", JP: "P" } },
+  { key: "taurus",      label: "황소자리",   range: [4, 20, 5, 20],
+    desc: "속도보다 안정을 택하고 한번 정하면 오래 간다고 이야기됩니다.", lean: { SN: "S", JP: "J" } },
+  { key: "gemini",      label: "쌍둥이자리", range: [5, 21, 6, 21],
+    desc: "호기심이 넓고 말로 사람을 잇는 쪽으로 이야기됩니다.", lean: { EI: "E", SN: "N" } },
+  { key: "cancer",      label: "게자리",     range: [6, 22, 7, 22],
+    desc: "가까운 사람을 챙기고 속마음은 안으로 두는 쪽이라고 합니다.", lean: { EI: "I", TF: "F" } },
+  { key: "leo",         label: "사자자리",   range: [7, 23, 8, 22],
+    desc: "앞에 서는 자리를 피하지 않고 판을 이끄는 쪽으로 이야기됩니다.", lean: { EI: "E", JP: "J" } },
+  { key: "virgo",       label: "처녀자리",   range: [8, 23, 9, 22],
+    desc: "세부를 살피고 어긋난 곳을 그냥 넘기지 못한다고 이야기됩니다.", lean: { SN: "S", JP: "J" } },
+  { key: "libra",       label: "천칭자리",   range: [9, 23, 10, 22],
+    desc: "양쪽을 살펴 균형을 맞추고 관계를 부드럽게 한다고 합니다.", lean: { EI: "E", TF: "F" } },
+  { key: "scorpio",     label: "전갈자리",   range: [10, 23, 11, 21],
+    desc: "속을 잘 보이지 않고 한번 파고들면 끝을 본다고 이야기됩니다.", lean: { EI: "I", TF: "T" } },
+  { key: "sagittarius", label: "사수자리",   range: [11, 22, 12, 21],
+    desc: "새로운 곳과 새로운 생각으로 자꾸 뻗어 간다고 이야기됩니다.", lean: { EI: "E", SN: "N" } },
+  { key: "capricorn",   label: "염소자리",   range: [12, 22, 1, 19],
+    desc: "현실을 딛고 차근차근 쌓아 올리는 쪽으로 이야기됩니다.", lean: { SN: "S", JP: "J" } },
+  { key: "aquarius",    label: "물병자리",   range: [1, 20, 2, 18],
+    desc: "남과 다른 시각으로 보고 거리를 두고 판단한다고 합니다.", lean: { SN: "N", TF: "T" } },
+  { key: "pisces",      label: "물고기자리", range: [2, 19, 3, 20],
+    desc: "마음을 잘 헤아리고 상상 속을 자주 오간다고 이야기됩니다.", lean: { EI: "I", TF: "F" } }
+];
+
+// 월·일로 별자리를 찾는다. 염소자리처럼 해를 넘기는 구간도 처리한다.
+export function zodiacOf(month, day) {
+  return ZODIAC.find(({ range: [m1, d1, m2, d2] }) =>
+    m1 <= m2
+      ? (month === m1 && day >= d1) || (month === m2 && day <= d2)
+      : (month === m1 && day >= d1) || (month === m2 && day <= d2)
+  ) || null;
+}
