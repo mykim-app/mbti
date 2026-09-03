@@ -139,13 +139,23 @@ export function comboRank(me, limit = 5) {
   }
 
   out.sort((x, y) => y.total - x.total || (x.label < y.label ? -1 : 1));
+
   // 같은 성격유형이 목록을 채우지 않도록 유형마다 가장 높은 조합 하나씩만 남긴다.
+  // 다만 같은 점수인 조합이 여럿이면 이름을 함께 적어, 가려지는 조합이 없게 한다.
   const onePerType = (list) => {
     const seen = new Set(), res = [];
     for (const r of list) {
       if (seen.has(r.type)) continue;
       seen.add(r.type);
-      res.push(r);
+      const tied = out.filter((x) => x.type === r.type && x.total === r.total);
+      const zs = [...new Set(tied.map((x) => x.zodiac).filter(Boolean))].map(zLabel);
+      const bs = [...new Set(tied.map((x) => x.blood).filter(Boolean))].map((b) => BLOOD[b].label);
+      const label = [
+        bs.length ? bs.join("·") : "",
+        zs.length ? zs.join("·") : "",
+        bs.length || zs.length ? r.type : `${r.type} · ${TYPE_INFO[r.type][0]}`
+      ].filter(Boolean).join(" · ");
+      res.push({ ...r, label, tiedCount: tied.length });
     }
     return res;
   };
@@ -226,9 +236,49 @@ export function renderComboSections(me) {
               <span class="cbar"><i style="width:${z.score}%"></i></span>
               <span class="cscore">${z.score}</span></div>`).join("")}</div></div>` : ""}
       </div>
+      <div class="lookup noprint" data-me="${esc(me.type)}|${esc(me.blood || "")}|${esc(me.zodiac || "")}">
+        <p class="sub">상대 조합 찾아보기</p>
+        <div class="lookrow">
+          <select class="input" data-lk="blood">${Object.keys(BLOOD).map((b) =>
+            `<option value="${b}">${BLOOD[b].label}</option>`).join("")}</select>
+          <select class="input" data-lk="zodiac">${ZODIAC.map((z) =>
+            `<option value="${z.key}">${z.label}</option>`).join("")}</select>
+          <select class="input" data-lk="type">${TYPES.map((t) =>
+            `<option value="${t}">${t}</option>`).join("")}</select>
+        </div>
+        <p class="lookout" data-lk="out"></p>
+      </div>
+
       <p class="mixfoot">혈액형과 별자리로 성격을 나누는 것은 널리 알려진 이야기일 뿐,
         연구로 확인된 바가 없습니다. 성격유형 궁합 역시 연구로 뒷받침된 것이 아닙니다.
         낮게 나온 조합도 안 맞는 사이라는 뜻이 아니라 서로 다른 지점이 많다는 정도이니,
         재미로 봐 주세요.</p>
     </section>` : ""}`;
+}
+
+/* 화면에 그려진 뒤 '상대 조합 찾아보기'를 움직이게 한다. */
+export function bindLookup(root = document) {
+  root.querySelectorAll(".lookup").forEach((box) => {
+    const [type, blood, zodiac] = box.dataset.me.split("|");
+    const me = { type, blood, zodiac };
+    const out = box.querySelector('[data-lk="out"]');
+    const pickers = ["blood", "zodiac", "type"].map((k) => box.querySelector(`[data-lk="${k}"]`));
+
+    const show = () => {
+      const other = { blood: pickers[0].value, zodiac: pickers[1].value, type: pickers[2].value };
+      const s = comboScore(me, other);
+      // 전체 조합에서 몇 번째인지 센다. 같은 점수는 공동 순위로 본다.
+      let higher = 0, same = 0;
+      for (const t of TYPES) for (const b of BLOODS) for (const z of ZODIAC) {
+        const v = comboScore(me, { type: t, blood: b, zodiac: z.key }).total;
+        if (v > s.total) higher++;
+        else if (v === s.total) same++;
+      }
+      out.innerHTML = `<b>${s.total}%</b> · 전체 ${TYPES.length * BLOODS.length * ZODIAC.length}개 조합 중 ` +
+        `<b>${higher + 1}위</b>${same > 1 ? ` (같은 점수 ${same}개 공동)` : ""}` +
+        `<span class="lookdetail">유형 ${s.mbti} · 혈액형 ${s.blood ?? "-"} · 별자리 ${s.zodiac ?? "-"}</span>`;
+    };
+    pickers.forEach((p) => p.addEventListener("change", show));
+    show();
+  });
 }

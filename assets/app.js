@@ -4,7 +4,7 @@ import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL,
 import { buildItems, score, buildScaleItems, scoreScale,
   buildDeepItems, scoreDeep } from "./scoring.js";
 import { fortune } from "./fortune.js";
-import { renderComboSections } from "./combo.js";
+import { renderComboSections, bindLookup } from "./combo.js";
 import { renderStrengths, renderMatch, renderJobs } from "./report.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
@@ -552,6 +552,7 @@ function renderResult() {
   <p class="lead noprint" id="pdfhint" style="font-size:12.5px;margin-top:10px">
     A4 파일로 내려받습니다. 내용이 길면 두 쪽으로 나뉘며, 항목이 쪽 경계에서 잘리지 않습니다.</p>`;
 
+  bindLookup(app);
   document.getElementById("pdf").addEventListener("click", () => savePdf());
   document.getElementById("again").addEventListener("click", () => { state.name = ""; renderIntro(); });
 }

@@ -341,3 +341,13 @@ a.link{display:inline-block}
 @media (max-width:520px){.modes3{flex-direction:column}}
 .turn{font-size:13.5px;font-weight:700;color:var(--teal);margin:2px 0 8px;
   border-left:3px solid var(--teal);padding-left:11px}
+.lookup{border:1px solid var(--rule);border-radius:4px;background:var(--card);
+  padding:14px 15px;margin-top:18px}
+.lookup .sub{margin-top:0}
+.lookrow{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:7px}
+.lookrow .input{padding:9px 10px;font-size:13.5px}
+.lookout{font-size:14px;margin:12px 0 0;line-height:1.6}
+.lookout b{font-size:16px}
+.lookdetail{display:block;font-size:11.5px;color:var(--soft);margin-top:3px;
+  font-variant-numeric:tabular-nums}
+@media (max-width:520px){.lookrow{grid-template-columns:1fr}}

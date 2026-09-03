@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, OTP_WINDOW_SECONDS, OTP_LENGTH } from "./config.js";
 import { TYPE_INFO, BLOOD, ZODIAC } from "./questions.js";
-import { renderComboSections } from "./combo.js";
+import { renderComboSections, bindLookup } from "./combo.js";
 import { renderTypeReport } from "./report.js";
 
 const app = document.getElementById("app");
@@ -318,9 +318,11 @@ async function renderCombo() {
       zodiac: document.getElementById("pz").value
     };
     document.getElementById("cbox").innerHTML = comboBody(pick);
+    bindLookup(app);
   };
   ["pt", "pb", "pz"].forEach((id) =>
     document.getElementById(id).addEventListener("change", redraw));
+  bindLookup(app);
   document.getElementById("out").addEventListener("click", signOut);
 }
 
