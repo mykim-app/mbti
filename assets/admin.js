@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, OTP_WINDOW_SECONDS, OTP_LENGTH } from "./config.js";
+import { TYPE_INFO, BLOOD, ZODIAC } from "./questions.js";
+import { renderComboSections } from "./combo.js";
 
 const app = document.getElementById("app");
 const configured = !SUPABASE_URL.includes("여기에") && !SUPABASE_ANON_KEY.includes("여기에");
@@ -9,6 +11,8 @@ let email = "";      // 화면에서 직접 입력받는다. 코드에 주소를
 let timer = null;
 let rows = [];
 let query = "";
+let view = "list";                                   // list | combo
+let pick = { type: "ISTJ", blood: "A", zodiac: "aries" };
 
 const ZLABEL = { aries: "양자리", taurus: "황소자리", gemini: "쌍둥이자리", cancer: "게자리",
   leo: "사자자리", virgo: "처녀자리", libra: "천칭자리", scorpio: "전갈자리",
@@ -145,6 +149,7 @@ function renderList() {
 
   app.innerHTML = `
     <h1>검사 기록</h1>
+    ${tabs()}
     <div class="row" style="margin-bottom:16px">
       <input id="q" class="input" style="flex:1 1 180px" placeholder="이름 검색" value="${esc(query)}">
       <button class="btn-ghost" id="reload">새로고침</button>
@@ -157,7 +162,7 @@ function renderList() {
       <thead><tr><th>이름</th><th>유형</th><th>혈액형</th><th>별자리</th>
         <th>E·I</th><th>S·N</th><th>T·F</th><th>J·P</th>
         <th>문항</th><th>검사일시</th><th></th></tr></thead>
-      <tbody>${list.map((r) => `<tr>
+      <tbody>${list.map((r) => `<tr data-row="${r.id}" class="clickrow" title="눌러서 조합 결과 보기">
         <td>${esc(r.name)}</td>
         <td style="font-weight:700;letter-spacing:.04em">${esc(r.mbti_type)}</td>
         <td>${r.blood_type ? esc(r.blood_type) + "형" : "—"}</td>
@@ -185,12 +190,87 @@ function renderList() {
     const nq = document.getElementById("q");
     nq.focus(); nq.setSelectionRange(pos, pos);
   });
+  bindTabs();
+  app.querySelectorAll("[data-row]").forEach((tr) =>
+    tr.addEventListener("click", (e) => {
+      if (e.target.closest("[data-del]")) return;
+      const r = rows.find((x) => x.id === tr.dataset.row);
+      if (!r) return;
+      pick = { type: r.mbti_type, blood: r.blood_type || "", zodiac: r.zodiac || "" };
+      view = "combo";
+      renderCombo();
+      window.scrollTo(0, 0);
+    }));
   document.getElementById("reload").addEventListener("click", openList);
   document.getElementById("out").addEventListener("click", signOut);
   const csv = document.getElementById("csv");
   if (csv) csv.addEventListener("click", () => exportCsv(list));
   app.querySelectorAll("[data-del]").forEach((b) =>
     b.addEventListener("click", () => remove(b.dataset.del)));
+}
+
+function tabs() {
+  return `<div class="modes" style="margin-bottom:18px">
+    <button class="mode" data-view="list" aria-pressed="${view === "list"}">
+      <b>검사 기록</b><span>저장된 결과 목록</span></button>
+    <button class="mode" data-view="combo" aria-pressed="${view === "combo"}">
+      <b>조합 미리보기</b><span>혈액형·별자리·유형을 골라 결과 보기</span></button>
+  </div>`;
+}
+
+function bindTabs() {
+  app.querySelectorAll("[data-view]").forEach((b) =>
+    b.addEventListener("click", () => {
+      view = b.dataset.view;
+      view === "combo" ? renderCombo() : renderList();
+    }));
+}
+
+function renderCombo() {
+  app.innerHTML = `
+    <h1>조합 미리보기</h1>
+    ${tabs()}
+    <div class="picker">
+      <div>
+        <label class="label" for="pt">성격유형</label>
+        <select class="input" id="pt">${Object.keys(TYPE_INFO).map((t) =>
+          `<option value="${t}" ${pick.type === t ? "selected" : ""}>${t} · ${TYPE_INFO[t][0]}</option>`).join("")}</select>
+      </div>
+      <div>
+        <label class="label" for="pb">혈액형</label>
+        <select class="input" id="pb">
+          <option value="">고르지 않음</option>
+          ${Object.keys(BLOOD).map((b) =>
+            `<option value="${b}" ${pick.blood === b ? "selected" : ""}>${BLOOD[b].label}</option>`).join("")}
+        </select>
+      </div>
+      <div>
+        <label class="label" for="pz">별자리</label>
+        <select class="input" id="pz">
+          <option value="">고르지 않음</option>
+          ${ZODIAC.map((z) =>
+            `<option value="${z.key}" ${pick.zodiac === z.key ? "selected" : ""}>${z.label}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    <div class="sheet" id="cbox">${renderComboSections(pick)}</div>
+    <div class="foot">
+      <span style="font-size:12.5px;color:var(--soft)">기록에 저장되지 않는 미리보기입니다</span>
+      <button class="btn-ghost" id="out">로그아웃</button>
+    </div>`;
+
+  bindTabs();
+  const redraw = () => {
+    pick = {
+      type: document.getElementById("pt").value,
+      blood: document.getElementById("pb").value,
+      zodiac: document.getElementById("pz").value
+    };
+    document.getElementById("cbox").innerHTML = renderComboSections(pick);
+  };
+  ["pt", "pb", "pz"].forEach((id) =>
+    document.getElementById(id).addEventListener("change", redraw));
+  document.getElementById("out").addEventListener("click", signOut);
 }
 
 async function remove(id) {

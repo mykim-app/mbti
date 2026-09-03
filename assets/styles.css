@@ -295,3 +295,28 @@ a.link{display:inline-block}
   .zrow #zbirth{flex:1 1 auto}
   .zor{text-align:center}
 }
+
+/* ── 조합 순위 막대 ────────────────────────────────────── */
+.crows{display:flex;flex-direction:column;gap:5px;margin-bottom:6px}
+.crow{display:grid;grid-template-columns:22px 1fr 70px 42px;align-items:center;gap:9px;
+  font-size:13.5px}
+.crank{font-size:11px;font-weight:800;color:var(--soft);text-align:center;
+  border:1px solid var(--rule);border-radius:2px;padding:1px 0}
+.clabel{letter-spacing:.01em}
+.cbar{height:7px;background:#EFF1EE;border-radius:4px;overflow:hidden}
+.cbar i{display:block;height:100%;background:var(--soft)}
+.cgood .cbar i{background:var(--teal)}
+.cbad .cbar i{background:var(--plum)}
+.cscore{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.compact .crow{font-size:11px;grid-template-columns:18px 1fr 56px 34px;gap:7px}
+.compact .cbar{height:6px}
+
+/* ── 관리자 조합 미리보기 ──────────────────────────────── */
+.picker{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px}
+.picker .label{margin-bottom:5px}
+.clickrow{cursor:pointer}
+.clickrow:hover{background:#F4F6F3}
+@media (max-width:520px){
+  .picker{grid-template-columns:1fr}
+  .crow{grid-template-columns:20px 1fr 44px 38px;gap:7px;font-size:12.5px}
+}

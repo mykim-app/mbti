@@ -3,6 +3,7 @@ import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL, TYPE_MATCH, TYPE_JOB,
   BLOOD, ZODIAC, zodiacOf } from "./questions.js";
 import { buildItems, score, buildScaleItems, scoreScale, matchTable } from "./scoring.js";
 import { fortune } from "./fortune.js";
+import { renderComboSections } from "./combo.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 const app = document.getElementById("app");
@@ -286,35 +287,6 @@ async function finish() {
   renderResult();
 }
 
-// 앞말의 받침을 보고 은/는 을 고른다. "처녀자리는", "A형은"
-function eun(word) {
-  const ch = String(word).trim().slice(-1);
-  const code = ch.charCodeAt(0);
-  if (code < 0xac00 || code > 0xd7a3) return "은";      // 한글이 아니면 그대로
-  return (code - 0xac00) % 28 === 0 ? "는" : "은";
-}
-
-// 혈액형·별자리 통설이 가리키는 방향과 검사 결과를 지표별로 맞춰 본다.
-function mixLines(type, bl, zo) {
-  const mine = { EI: type[0], SN: type[1], TF: type[2], JP: type[3] };
-  const same = [], diff = [];
-  const check = (src, name) => {
-    if (!src) return;
-    for (const d of DIMS) {
-      const want = (src.lean || {})[d];
-      if (!want) continue;
-      const nm = BANK[d].name[BANK[d].poles.indexOf(want)];
-      const line = `${name}${eun(name)} ${nm}(${want}) 쪽을 가리킵니다`;
-      (want === mine[d] ? same : diff).push(
-        want === mine[d] ? line + " — 검사 결과와 같습니다"
-                         : line + `, 검사 결과는 ${BANK[d].name[BANK[d].poles.indexOf(mine[d])]}(${mine[d]})입니다`);
-    }
-  };
-  check(bl, bl ? bl.label : "");
-  check(zo, zo ? zo.label : "");
-  return { same, diff };
-}
-
 function analysisLine(dims) {
   const sorted = DIMS.slice().sort((x, y) =>
     Math.max(dims[y].pctA, dims[y].pctB) - Math.max(dims[x].pctA, dims[x].pctB));
@@ -430,7 +402,6 @@ function renderResult() {
   const table = matchTable(type, Object.keys(TYPE_INFO));
   const bl = BLOOD[state.blood] || null;
   const zo = ZODIAC.find((z) => z.key === state.zodiac) || null;
-  const extra = mixLines(type, bl, zo);
   const fo = fortune(type + (state.blood || "") + (state.zodiac || ""), detail);
   const close = DIMS.filter((d) => dims[d].pctA >= 42 && dims[d].pctA <= 58);
   const today = new Date().toLocaleDateString("ko-KR");
@@ -518,32 +489,7 @@ function renderResult() {
     </section>
     <div class="pb mtail">${mtable(table.slice(8))}</div>
 
-    ${(bl || zo) ? `<section class="blk pb">
-      <h2 class="sec">혈액형 · 별자리와 함께 보기</h2>
-      <div class="mixhead">
-        ${bl ? `<span class="mixtag">${bl.label}</span>` : ""}
-        ${zo ? `<span class="mixtag">${zo.label}</span>` : ""}
-      </div>
-      ${bl ? `<p class="mixdesc"><b>${bl.label}</b> ${bl.desc}</p>` : ""}
-      ${zo ? `<p class="mixdesc"><b>${zo.label}</b> ${zo.desc}</p>` : ""}
-      <div class="cols">
-        <div>
-          <p class="sub">검사 결과와 맞물리는 점</p>
-          ${extra.same.length
-            ? `<ul class="rlist">${extra.same.map((t) => `<li>${t}</li>`).join("")}</ul>`
-            : `<p class="mixnone">겹치는 지표가 없습니다.</p>`}
-        </div>
-        <div>
-          <p class="sub">엇갈리는 점</p>
-          ${extra.diff.length
-            ? `<ul class="rlist">${extra.diff.map((t) => `<li>${t}</li>`).join("")}</ul>`
-            : `<p class="mixnone">엇갈리는 지표가 없습니다.</p>`}
-        </div>
-      </div>
-      <p class="mixfoot">혈액형과 별자리로 성격을 나누는 것은 널리 알려진 이야기일 뿐,
-        연구로 확인된 바가 없습니다. 엇갈린다고 해서 어느 쪽이 틀린 것도 아닙니다.
-        재미로 견주어 보는 자리로 봐 주세요.</p>
-    </section>` : ""}
+    ${(bl || zo) ? renderComboSections({ type, blood: state.blood, zodiac: state.zodiac }) : ""}
 
     <section class="blk pb">
       <h2 class="sec">어울리는 일</h2>
@@ -553,11 +499,11 @@ function renderResult() {
       ${(job.jobs || []).length > 3 ? `<p class="sub">그 밖에 살펴볼 만한 일</p>
       <div class="chips">${job.jobs.slice(3).map((j) =>
         `<span class="jchip">${esc(j)}</span>`).join("")}</div>` : ""}
-    </section>
 
-    <p class="rfoot pb">v${VERSION} · ${state.items.length}문항 기준의 참고 결과입니다.
+    <p class="rfoot">v${VERSION} · ${state.items.length}문항 기준의 참고 결과입니다.
       같은 사람이 몇 주 뒤 다시 하면 한 지표가 바뀌기도 합니다.
       궁합의 백분율은 통계 조사값이 아니라 네 지표의 조합으로 매긴 참고 점수이며, 연애·일·친구 점수도 같은 방식으로 계산했습니다. 관계나 진로를 정하는 근거로 쓰지 않습니다.</p>
+    </section>
   </div>
 
   <section class="fort noprint">
