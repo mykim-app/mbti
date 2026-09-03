@@ -275,7 +275,7 @@ function comboBody(pick) {
   return base;
 }
 
-function renderCombo() {
+async function renderCombo() {
   if (!(await requireSession())) return signOut("다시 인증해 주세요.");
   app.innerHTML = `
     <h1>조합 미리보기</h1>
