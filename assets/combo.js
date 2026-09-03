@@ -114,21 +114,33 @@ export function comboScore(a, b) {
   return { total: Math.round(m * 0.6 + bf * 0.2 + zf * 0.2), mbti: m, blood: bf, zodiac: zf };
 }
 
-// 상대가 될 수 있는 모든 조합을 점수순으로 돌려준다.
+// 상대가 될 수 있는 조합을 점수순으로 돌려준다.
+// 내가 넣지 않은 항목(혈액형·별자리)은 상대 쪽에서도 따지지 않는다.
 export function comboRank(me, limit = 5) {
+  const bloods = me.blood ? BLOODS : [""];
+  const zodiacs = me.zodiac ? ZODIAC.map((z) => z.key) : [""];
   const out = [];
-  for (const t of TYPES) {
-    for (const b of BLOODS) {
-      for (const z of ZODIAC) {
-        const other = { type: t, blood: b, zodiac: z.key };
-        const s = comboScore(me, other);
-        out.push({ ...other, ...s, label: `${BLOOD[b].label} · ${z.label} · ${t}` });
+
+  for (const type of TYPES) {
+    for (const blood of bloods) {
+      for (const zodiac of zodiacs) {
+        const s = comboScore(me, { type, blood, zodiac });
+        const label = [
+          blood ? BLOOD[blood].label : "",
+          zodiac ? zLabel(zodiac) : "",
+          blood || zodiac ? type : `${type} · ${TYPE_INFO[type][0]}`
+        ].filter(Boolean).join(" · ");
+        out.push({
+          type, blood, zodiac, label,
+          total: s.total, mbtiScore: s.mbti, bloodScore: s.blood, zodiacScore: s.zodiac
+        });
       }
     }
   }
+
   out.sort((x, y) => y.total - x.total || (x.label < y.label ? -1 : 1));
   // 같은 성격유형이 목록을 채우지 않도록 유형마다 가장 높은 조합 하나씩만 남긴다.
-  const pickOnePerType = (list) => {
+  const onePerType = (list) => {
     const seen = new Set(), res = [];
     for (const r of list) {
       if (seen.has(r.type)) continue;
@@ -137,10 +149,7 @@ export function comboRank(me, limit = 5) {
     }
     return res;
   };
-  return {
-    top: pickOnePerType(out).slice(0, limit),
-    bottom: pickOnePerType(out.slice().reverse()).slice(0, 3)
-  };
+  return { top: onePerType(out).slice(0, limit), bottom: onePerType(out.slice().reverse()).slice(0, 3) };
 }
 
 // 혈액형만 볼 때, 별자리만 볼 때의 순위
@@ -169,6 +178,8 @@ export function renderComboSections(me) {
   const p = comboProfile(me.type, me.blood, me.zodiac);
   const rank = comboRank(me, 5);
   const ax = axisRank(me);
+  const full = Boolean(me.blood && me.zodiac);
+  const hasAxis = ax.blood.length > 0 || ax.zodiac.length > 0;
   const row = (r, i, cls) => `<div class="crow ${cls}">
       <span class="crank">${i + 1}</span>
       <span class="clabel">${esc(r.label)}</span>
@@ -177,27 +188,29 @@ export function renderComboSections(me) {
     </div>`;
 
   return `
-    <section class="blk pb">
+    ${(p.deep.length || p.split.length) ? `<section class="blk pb">
       <h2 class="sec">${esc(p.label)}인 사람</h2>
       <p class="mixdesc">${esc(p.head)}</p>
       ${p.deep.length ? `<p class="sub">더 짙어지는 면</p>
         <ul class="rlist">${p.deep.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
       ${p.split.length ? `<p class="sub">두 갈래로 보이는 면</p>
         <ul class="rlist">${p.split.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
-    </section>
+    </section>` : ""}
 
     <section class="blk pb">
       <h2 class="sec">조합으로 본 궁합 순위</h2>
-      <p class="jenv">가까운 사이를 전제로 한 순위입니다. 성격유형 6, 혈액형 2, 별자리 2의
-        비중으로 합했고, 유형마다 가장 높은 조합 하나씩만 골라 늘어놓았습니다.
-        일에서의 궁합은 앞의 표를 보세요.</p>
+      <p class="jenv">${full
+        ? "가까운 사이를 전제로 한 순위입니다. 성격유형 6, 혈액형 2, 별자리 2의 비중으로 합했고, 유형마다 가장 높은 조합 하나씩만 골라 늘어놓았습니다. 일에서의 궁합은 앞의 표를 보세요."
+        : (me.blood || me.zodiac)
+        ? `가까운 사이를 전제로 한 순위입니다. 넣지 않은 항목은 셈에서 빼고 ${me.blood ? "성격유형과 혈액형" : "성격유형과 별자리"}만으로 견주었습니다.`
+        : "혈액형과 별자리가 없어 성격유형만으로 견준 순위입니다. 가까운 사이를 전제로 합니다."}</p>
       <p class="sub">잘 맞는 조합</p>
       <div class="crows">${rank.top.map((r, i) => row(r, i, "cgood")).join("")}</div>
       <p class="sub">어려울 수 있는 조합</p>
       <div class="crows">${rank.bottom.map((r, i) => row(r, i, "cbad")).join("")}</div>
     </section>
 
-    <section class="blk pb">
+    ${hasAxis ? `<section class="blk pb">
       <h2 class="sec">항목별로 따로 보면</h2>
       <div class="cols">
         ${ax.blood.length ? `<div><p class="sub">혈액형끼리</p>
@@ -217,5 +230,5 @@ export function renderComboSections(me) {
         연구로 확인된 바가 없습니다. 성격유형 궁합 역시 연구로 뒷받침된 것이 아닙니다.
         낮게 나온 조합도 안 맞는 사이라는 뜻이 아니라 서로 다른 지점이 많다는 정도이니,
         재미로 봐 주세요.</p>
-    </section>`;
+    </section>` : ""}`;
 }
