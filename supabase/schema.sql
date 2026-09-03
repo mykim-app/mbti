@@ -75,6 +75,24 @@ create policy "관리자 삭제"
   using (public.is_admin());
 
 
+-- 5) 오늘 몇 건이 저장됐는지 세어 주는 함수
+--    기록은 보여 주지 않고 숫자만 돌려준다. 시작 화면에 쓴다.
+create or replace function public.today_count()
+  returns integer
+  language sql
+  security definer
+  stable
+  set search_path = public
+as $$
+  select count(*)::int
+  from public.mbti_results
+  where created_at >= date_trunc('day', now() at time zone 'Asia/Seoul')
+                        at time zone 'Asia/Seoul';
+$$;
+revoke all on function public.today_count() from public;
+grant execute on function public.today_count() to anon, authenticated;
+
+
 -- ─────────────────────────────────────────────────────────────
 -- 마지막 단계: 관리자 주소 등록
 --
