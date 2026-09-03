@@ -246,3 +246,20 @@ a.link{display:inline-block}
 .compact .mmini{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:6px}
 .compact .sub2{margin-top:13px}
 .compact .jenv{margin-bottom:5px}
+
+/* ── 오늘의 운세 ───────────────────────────────────────── */
+.fort{border:1px solid var(--rule);border-top:3px solid var(--teal);border-radius:4px;
+  background:var(--card);padding:18px 20px;margin-top:28px}
+.fort-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  margin-bottom:12px}
+.fort-t{font-size:14px;font-weight:800;margin:0}
+.fort-d{font-size:11.5px;color:var(--soft);font-variant-numeric:tabular-nums;flex:none}
+.fort-line{font-size:17px;line-height:1.6;font-weight:700;margin:0 0 14px;
+  letter-spacing:-.01em}
+.fort-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px}
+.ftag{border:1px solid var(--rule);border-radius:20px;padding:5px 12px;font-size:12.5px}
+.ftag b{font-weight:700;color:var(--soft);margin-right:6px;font-size:11.5px}
+.fort-list{margin:0;padding-left:17px}
+.fort-list li{font-size:13.5px;line-height:1.65;margin-bottom:3px}
+.fort-list b{margin-right:5px}
+.fort-foot{font-size:11.5px;color:var(--soft);margin:12px 0 0;line-height:1.5}

@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL, TYPE_MATCH, TYPE_JOB } from "./questions.js";
 import { buildItems, score, buildScaleItems, scoreScale, matchTable } from "./scoring.js";
+import { fortune } from "./fortune.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 const app = document.getElementById("app");
@@ -317,6 +318,7 @@ function renderResult() {
   const job = TYPE_JOB[type] || { jobs: [] };
   const match = TYPE_MATCH[type] || { fit: [], hard: [] };
   const table = matchTable(type, Object.keys(TYPE_INFO));
+  const fo = fortune(type, detail);
   const close = DIMS.filter((d) => dims[d].pctA >= 42 && dims[d].pctA <= 58);
   const today = new Date().toLocaleDateString("ko-KR");
 
@@ -414,6 +416,26 @@ function renderResult() {
       같은 사람이 몇 주 뒤 다시 하면 한 지표가 바뀌기도 합니다.
       궁합의 백분율은 통계 조사값이 아니라 네 지표의 조합으로 매긴 참고 점수이며, 연애·일·친구 점수도 같은 방식으로 계산했습니다. 관계나 진로를 정하는 근거로 쓰지 않습니다.</p>
   </div>
+
+  <section class="fort noprint">
+    <div class="fort-h">
+      <h2 class="fort-t">오늘의 운세</h2>
+      <span class="fort-d">${fo.day} · ${type}</span>
+    </div>
+    <p class="fort-line">${esc(fo.line)}</p>
+    <div class="fort-tags">
+      <span class="ftag"><b>키워드</b>${esc(fo.keyword)}</span>
+      <span class="ftag"><b>좋은 때</b>${esc(fo.time)}</span>
+      <span class="ftag"><b>색</b>${esc(fo.color)}</span>
+      <span class="ftag"><b>잘 풀리는 일</b>${esc(fo.focus)}</span>
+    </div>
+    <ul class="fort-list">
+      ${fo.lean ? `<li><b>오늘 기대 볼 것</b> ${esc(fo.lean)}</li>` : ""}
+      ${fo.watch ? `<li><b>오늘 조심할 것</b> ${esc(fo.watch)}</li>` : ""}
+    </ul>
+    <p class="fort-foot">재미로 보는 것입니다. 날짜와 유형으로 문구를 고른 것일 뿐,
+      어떤 예측도 아닙니다.</p>
+  </section>
 
   ${close.length ? `<div class="note noprint">${close.map((d) =>
     `${BANK[d].poles[0]}/${BANK[d].poles[1]}`).join(", ")} 지표가 팽팽합니다.
