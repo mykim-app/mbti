@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, OTP_WINDOW_SECONDS, OTP_LENGTH } from "./config.js";
 import { TYPE_INFO, BLOOD, ZODIAC } from "./questions.js";
 import { renderComboSections } from "./combo.js";
+import { renderTypeReport } from "./report.js";
 
 const app = document.getElementById("app");
 const configured = !SUPABASE_URL.includes("여기에") && !SUPABASE_ANON_KEY.includes("여기에");
@@ -261,7 +262,20 @@ function bindTabs() {
     }));
 }
 
-async function renderCombo() {
+async // 성격유형만 있으면 유형 결과만, 셋 다 있으면 조합까지 보여 준다.
+// 혈액형과 별자리는 둘 다 있어야 조합을 계산하므로 하나만 있으면 알려 준다.
+function comboBody(pick) {
+  const base = renderTypeReport(pick.type);
+  if (pick.blood && pick.zodiac) return base + renderComboSections(pick);
+  if (pick.blood || pick.zodiac) {
+    return `<div class="err" style="margin-top:0">${pick.blood
+      ? "별자리를 골라 주세요. 혈액형만으로는 조합 결과를 만들지 않습니다."
+      : "혈액형을 골라 주세요. 별자리만으로는 조합 결과를 만들지 않습니다."}</div>` + base;
+  }
+  return base;
+}
+
+function renderCombo() {
   if (!(await requireSession())) return signOut("다시 인증해 주세요.");
   app.innerHTML = `
     <h1>조합 미리보기</h1>
@@ -289,7 +303,7 @@ async function renderCombo() {
         </select>
       </div>
     </div>
-    <div class="sheet" id="cbox">${renderComboSections(pick)}</div>
+    <div class="sheet" id="cbox">${comboBody(pick)}</div>
     <div class="foot">
       <span style="font-size:12.5px;color:var(--soft)">기록에 저장되지 않는 미리보기입니다</span>
       <button class="btn-ghost" id="out">로그아웃</button>
@@ -302,7 +316,7 @@ async function renderCombo() {
       blood: document.getElementById("pb").value,
       zodiac: document.getElementById("pz").value
     };
-    document.getElementById("cbox").innerHTML = renderComboSections(pick);
+    document.getElementById("cbox").innerHTML = comboBody(pick);
   };
   ["pt", "pb", "pz"].forEach((id) =>
     document.getElementById(id).addEventListener("change", redraw));

@@ -1,10 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL, TYPE_MATCH, TYPE_JOB,
+import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL,
   BLOOD, ZODIAC, zodiacOf } from "./questions.js";
-import { buildItems, score, buildScaleItems, scoreScale, matchTable,
+import { buildItems, score, buildScaleItems, scoreScale,
   buildDeepItems, scoreDeep } from "./scoring.js";
 import { fortune } from "./fortune.js";
 import { renderComboSections } from "./combo.js";
+import { renderStrengths, renderMatch, renderJobs } from "./report.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 const app = document.getElementById("app");
@@ -447,9 +448,6 @@ function renderResult() {
   const { type, dims } = state.result;
   const info = TYPE_INFO[type] || ["", ""];
   const detail = TYPE_DETAIL[type] || {};
-  const job = TYPE_JOB[type] || { jobs: [] };
-  const match = TYPE_MATCH[type] || { fit: [], hard: [] };
-  const table = matchTable(type, Object.keys(TYPE_INFO));
   const bl = state.format === "deep" ? (BLOOD[state.blood] || null) : null;
   const zo = state.format === "deep"
     ? (ZODIAC.find((z) => z.key === state.zodiac) || null) : null;
@@ -478,22 +476,6 @@ function renderResult() {
     </div>`;
   }).join("");
 
-  const mtable = (rows) => `<table class="tbl mt">
-    <thead><tr><th>유형</th><th>연애</th><th>일</th><th>친구</th><th>종합</th></tr></thead>
-    <tbody>${rows.map((r) => `<tr>
-      <td class="mtype">${r.type}<span class="mlab">${(TYPE_INFO[r.type] || [""])[0]}</span></td>
-      <td class="num">${r.love}</td><td class="num">${r.work}</td>
-      <td class="num">${r.friend}</td><td class="num mtot">${r.total}</td>
-    </tr>`).join("")}</tbody></table>`;
-
-  const pair = (arr, cls) => (arr || []).map(([t, why, kind, pct], i) =>
-    `<div class="pair ${cls}">
-      <b><span class="rank">${i + 1}순위</span> ${t}</b>
-      <span class="pct">${pct}%</span>
-      <span class="pwhy">${esc(why)}</span>
-      <em>${esc(kind)} · ${(TYPE_INFO[t] || [""])[0]}</em>
-    </div>`).join("");
-
   app.innerHTML = `
   <div class="sheet">
     <div class="pb">
@@ -515,44 +497,12 @@ function renderResult() {
       <p class="ranal">${analysisLine(dims)}</p>
     </section>
 
-    <div class="cols blk pb">
-      <section>
-        <h2 class="sec">강점</h2>
-        <ul class="rlist">${(detail.strong || []).map((t) => `<li>${t}</li>`).join("")}</ul>
-      </section>
-      <section>
-        <h2 class="sec">눈여겨볼 점</h2>
-        <ul class="rlist">${(detail.care || []).map((t) => `<li>${t}</li>`).join("")}</ul>
-      </section>
-    </div>
-
-    <section class="blk pb">
-      <h2 class="sec">다른 유형과의 궁합</h2>
-      <div class="cols">
-        <div><p class="sub">결이 잘 맞는 유형</p><div class="pairs">${pair(match.fit, "fitp")}</div></div>
-        <div><p class="sub">부딪히기 쉬운 유형</p><div class="pairs">${pair(match.hard, "hardp")}</div></div>
-      </div>
-    </section>
-
-    <section class="blk pb">
-      <h2 class="sec">연애 · 일 · 친구로 나눠 본 궁합</h2>
-      <p class="jenv">위의 두 유형은 성향의 결을, 아래 표는 상황별 맞물림을 봅니다.
-        연애는 보는 방식이 같고 판단 기준이 다를 때, 일은 판단 기준과 일하는 방식이
-        같을 때 높게 잡히므로 두 순위가 다를 수 있습니다.</p>
-      ${mtable(table.slice(0, 8))}
-    </section>
-    <div class="pb mtail">${mtable(table.slice(8))}</div>
+    ${renderStrengths(type)}
+    ${renderMatch(type)}
 
     ${(bl || zo) ? renderComboSections({ type, blood: state.blood, zodiac: state.zodiac }) : ""}
 
-    <section class="blk pb">
-      <h2 class="sec">어울리는 일</h2>
-      <p class="jenv">${esc(job.env || "")}</p>
-      <ol class="jrank">${(job.jobs || []).slice(0, 3).map((j) =>
-        `<li><span class="jno"></span>${esc(j)}</li>`).join("")}</ol>
-      ${(job.jobs || []).length > 3 ? `<p class="sub">그 밖에 살펴볼 만한 일</p>
-      <div class="chips">${job.jobs.slice(3).map((j) =>
-        `<span class="jchip">${esc(j)}</span>`).join("")}</div>` : ""}
+    ${renderJobs(type)}
 
     <p class="rfoot">v${VERSION} · ${state.items.length}문항 기준의 참고 결과입니다.
       같은 사람이 몇 주 뒤 다시 하면 한 지표가 바뀌기도 합니다.
