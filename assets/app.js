@@ -1,7 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL, TYPE_MATCH, TYPE_JOB,
   BLOOD, ZODIAC, zodiacOf } from "./questions.js";
-import { buildItems, score, buildScaleItems, scoreScale, matchTable } from "./scoring.js";
+import { buildItems, score, buildScaleItems, scoreScale, matchTable,
+  buildDeepItems, scoreDeep } from "./scoring.js";
 import { fortune } from "./fortune.js";
 import { renderComboSections } from "./combo.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
@@ -32,6 +33,8 @@ function renderIntro() {
     <h1>성격유형 검사 <span class="ver">v${VERSION}</span></h1>
     <p class="lead">${state.format === "scale"
       ? "문장을 읽고 얼마나 그런지 일곱 단계 중 하나를 고릅니다."
+      : state.format === "deep"
+      ? "두 가지 방식이 섞여 나옵니다. 네 개 중 고르는 문항과 일곱 단계로 표시하는 문항이 번갈아 나옵니다."
       : "각 질문마다 네 개의 답 중 자신에게 가장 가까운 하나를 고릅니다."}
       직장에서의 모습보다 <b>평소 편할 때의 나</b>를 기준으로, 오래 고민하지 말고 첫 반응대로 골라 주세요.</p>
 
@@ -43,6 +46,16 @@ function renderIntro() {
       <input id="nm" class="input" maxlength="20" placeholder="예: 홍길동" autocomplete="name">
     </div>
 
+    <label class="label">검사 방식</label>
+    <div class="modes modes3">
+      <button class="mode" data-fmt="choice" aria-pressed="${state.format === "choice"}">
+        <b>일반형 80문항</b><span>상황마다 네 답 중 하나 · 약 12분</span></button>
+      <button class="mode" data-fmt="scale" aria-pressed="${state.format === "scale"}">
+        <b>척도형 80문항</b><span>문장마다 그렇다 정도 표시 · 약 10분</span></button>
+      <button class="mode" data-fmt="deep" aria-pressed="${state.format === "deep"}">
+        <b>심화형 120문항</b><span>두 방식 절반씩 · 혈액형·별자리 함께 · 약 18분</span></button>
+    </div>
+    ${state.format === "deep" ? `
     <label class="label" for="bl">혈액형 <span class="opt-mark">선택</span></label>
     <div class="chipset" id="bl">
       ${["A", "B", "O", "AB"].map((b) =>
@@ -64,14 +77,8 @@ function renderIntro() {
     <p class="zhint" id="zhint">${state.zodiac
       ? "선택한 별자리: " + (ZODIAC.find((z) => z.key === state.zodiac) || {}).label
       : "별자리를 모르면 생일을 월-일 형식으로 넣으면 자동으로 정해집니다."}</p>
+    ` : ""}
 
-    <label class="label">검사 방식</label>
-    <div class="modes">
-      <button class="mode" data-fmt="choice" aria-pressed="${state.format === "choice"}">
-        <b>일반형 80문항</b><span>상황마다 네 답 중 하나 · 약 12분</span></button>
-      <button class="mode" data-fmt="scale" aria-pressed="${state.format === "scale"}">
-        <b>척도형 80문항</b><span>문장마다 그렇다 정도 표시 · 약 10분</span></button>
-    </div>
 
     <button class="btn" id="start" disabled>검사 시작</button>
 
@@ -82,8 +89,10 @@ function renderIntro() {
     <div class="foot">
       <span style="font-size:12.5px;color:var(--soft)">문항 풀 400개 · 매번 무작위 출제</span>
       <a class="dotlink" href="./admin.html" aria-label="관리">&middot;</a>
-    </div>`;
+    </div>
+    <p class="todaycnt" id="todaycnt"></p>`;
 
+  showToday();
   const nm = document.getElementById("nm");
   const startBtn = document.getElementById("start");
   nm.value = state.name;
@@ -102,6 +111,7 @@ function renderIntro() {
   const zsel = document.getElementById("zsel");
   const zbirth = document.getElementById("zbirth");
   const zhint = document.getElementById("zhint");
+  if (zsel && zbirth && zhint) {
   zsel.addEventListener("change", () => {
     state.zodiac = zsel.value;
     if (state.zodiac) { state.birth = ""; zbirth.value = ""; }
@@ -124,6 +134,7 @@ function renderIntro() {
       zhint.textContent = "그런 날짜는 없습니다. 월-일 형식으로 다시 넣어 주세요.";
     }
   });
+  }
 
   app.querySelectorAll(".mode").forEach((b) =>
     b.addEventListener("click", () => {
@@ -133,9 +144,21 @@ function renderIntro() {
   startBtn.addEventListener("click", start);
 }
 
+// 오늘 몇 명이 결과를 받았는지. 기록을 열지 않고 숫자만 받아온다.
+async function showToday() {
+  const el = document.getElementById("todaycnt");
+  if (!el || !sb) return;
+  try {
+    const { data, error } = await sb.rpc("today_count");
+    if (error || data === null || data === undefined) return;
+    el.textContent = `오늘 ${data}명이 결과를 확인했습니다`;
+  } catch { /* 숫자를 못 받아도 검사에는 지장이 없다 */ }
+}
+
 function start() {
-  state.items = state.format === "scale"
-    ? buildScaleItems(state.perDim) : buildItems(state.perDim);
+  state.items = state.format === "deep" ? buildDeepItems(15)
+    : state.format === "scale" ? buildScaleItems(state.perDim)
+    : buildItems(state.perDim);
   state.answers = {};
   state.page = 0;
   state.noAuto = false;
@@ -266,16 +289,17 @@ function scrollToNext(fromEl, slice) {
 
 /* ── 결과 ──────────────────────────────────────────────── */
 async function finish() {
-  state.result = state.format === "scale"
-    ? scoreScale(state.items, state.answers) : score(state.items, state.answers);
+  state.result = state.format === "deep" ? scoreDeep(state.items, state.answers)
+    : state.format === "scale" ? scoreScale(state.items, state.answers)
+    : score(state.items, state.answers);
   renderResult();
   window.scrollTo(0, 0);
   if (!sb) { state.saved = { ok: false, msg: "접속 정보 미설정" }; return renderResult(); }
   const d = state.result.dims;
   const { error } = await sb.from("mbti_results").insert({
     name: state.name.trim(),
-    blood_type: state.blood || null,
-    zodiac: state.zodiac || null,
+    blood_type: state.format === "deep" ? (state.blood || null) : null,
+    zodiac: state.format === "deep" ? (state.zodiac || null) : null,
     mbti_type: state.result.type,
     question_count: state.items.length,
     ei_e: d.EI.a, ei_i: d.EI.b,
@@ -400,8 +424,9 @@ function renderResult() {
   const job = TYPE_JOB[type] || { jobs: [] };
   const match = TYPE_MATCH[type] || { fit: [], hard: [] };
   const table = matchTable(type, Object.keys(TYPE_INFO));
-  const bl = BLOOD[state.blood] || null;
-  const zo = ZODIAC.find((z) => z.key === state.zodiac) || null;
+  const bl = state.format === "deep" ? (BLOOD[state.blood] || null) : null;
+  const zo = state.format === "deep"
+    ? (ZODIAC.find((z) => z.key === state.zodiac) || null) : null;
   const fo = fortune(type + (state.blood || "") + (state.zodiac || ""), detail);
   const close = DIMS.filter((d) => dims[d].pctA >= 42 && dims[d].pctA <= 58);
   const today = new Date().toLocaleDateString("ko-KR");

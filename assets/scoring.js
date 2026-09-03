@@ -73,8 +73,10 @@ export function score(items, answers) {
 // 한쪽으로만 동의하는 습관이 특정 유형으로 쏠리지 않게 하려는 장치다.
 export function buildScaleItems(perDim) {
   const list = [];
-  const half = Math.round(perDim / 2);
-  DIMS.forEach((d) => {
+  DIMS.forEach((d, di) => {
+    // 홀수면 한쪽이 하나 많아지므로, 그 하나를 지표마다 번갈아 준다.
+    const half = perDim % 2 === 0 ? perDim / 2
+      : Math.floor(perDim / 2) + (di % 2 === 0 ? 1 : 0);
     const pool = SCALE_BANK[d];
     const plus = shuffle(pool.map((it, i) => ({ it, i })).filter((x) => x.it.k === 1)).slice(0, half);
     const minus = shuffle(pool.map((it, i) => ({ it, i })).filter((x) => x.it.k === -1)).slice(0, perDim - half);
@@ -153,4 +155,40 @@ export function matchTable(type, all) {
   return all.filter((t) => t !== type)
     .map((t) => ({ type: t, ...matchScores(type, t) }))
     .sort((x, y) => y.total - x.total || (x.type < y.type ? -1 : 1));
+}
+
+/* ── 심화형 ────────────────────────────────────────────
+   지표마다 일반형 15문항과 척도형 15문항을 뽑아 모두 120문항을 낸다.
+   두 방식의 만점이 달라(일반형 30점, 척도형 45점) 척도형 쪽을 2/3로 맞춰
+   양쪽이 같은 무게로 반영되게 한다. */
+export function buildDeepItems(perDimEach = 15) {
+  return shuffle([...buildItems(perDimEach), ...buildScaleItems(perDimEach)]);
+}
+
+export function scoreDeep(items, answers) {
+  const plain = items.filter((i) => !i.scale);
+  const scaled = items.filter((i) => i.scale);
+  const g = score(plain, answers);
+  const s = scoreScale(scaled, answers);
+
+  const dims = {};
+  let type = "";
+  for (const d of DIMS) {
+    const a = g.dims[d].a + s.dims[d].a * (2 / 3);
+    const b = g.dims[d].b + s.dims[d].b * (2 / 3);
+    const total = a + b || 1;
+    let idx, tie = false;
+    if (a > b) idx = 0;
+    else if (b > a) idx = 1;
+    else { tie = true; idx = 0; }
+    dims[d] = {
+      a: Math.round(a), b: Math.round(b),
+      pctA: Math.round((a / total) * 100),
+      pctB: Math.round((b / total) * 100),
+      letter: BANK[d].poles[idx],
+      tie
+    };
+    type += dims[d].letter;
+  }
+  return { type, dims };
 }
