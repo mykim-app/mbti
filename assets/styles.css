@@ -7,7 +7,19 @@ html,body{margin:0;padding:0;background:var(--paper);color:var(--ink)}
 body{
   font-family:"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕","Noto Sans KR",sans-serif;
   -webkit-font-smoothing:antialiased;line-height:1.6;
+  /* 한국어는 낱말 중간에서 끊지 않고 띄어쓰기 자리에서만 줄을 바꾼다 */
+  word-break:keep-all;
+  line-break:strict;
+  overflow-wrap:break-word;
 }
+/* 칸이 좁아 한 낱말도 못 들어가는 곳은 예외로 끊어 넘치지 않게 한다 */
+.tbl td,.tbl th,.jchip,.chip,.mchip,.ftag,.clabel,.opt,.sc,.cbtn,.input,.btn,.btn-ghost{
+  overflow-wrap:anywhere;
+}
+/* 줄 나눔을 고르게 해 마지막 줄에 한 낱말만 남는 일을 줄인다 */
+h1,h2,.sec,.type-sub,.qt,.fort-line,.mode b,.pair b,.crow .clabel{text-wrap:balance}
+p,li,.lead,.rdesc,.ranal,.pwhy,.mixdesc,.jenv,.note,.rfoot,.guide,.zhint,
+.fort-foot,.mixfoot,.axis-top,.stmt{text-wrap:pretty}
 .wrap{max-width:640px;margin:0 auto;padding:40px 22px 72px}
 h1{font-size:31px;font-weight:800;letter-spacing:-.03em;line-height:1.25;margin:0 0 14px}
 .lead{font-size:15px;line-height:1.75;color:var(--soft);margin:0 0 26px}
@@ -51,7 +63,7 @@ h1{font-size:31px;font-weight:800;letter-spacing:-.03em;line-height:1.25;margin:
 .qt.st{text-align:center;font-size:17px;margin:6px 0 20px}
 .lik{display:flex;align-items:center;justify-content:center;gap:9px;padding:2px 0 6px}
 .lik-end{font-size:14px;font-weight:600;color:var(--ink);flex:none;width:64px;
-  line-height:1.35;word-break:keep-all;overflow-wrap:normal}
+  line-height:1.35}
 .lik-end:first-child{text-align:right;color:var(--teal)}
 .lik-end:last-child{text-align:left;color:var(--plum)}
 .dot7{border-radius:50%;background:none;cursor:pointer;flex:none;padding:0;

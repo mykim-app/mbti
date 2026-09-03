@@ -204,7 +204,7 @@ function renderQuiz() {
               `<button class="dot7 ${side} ${size}" data-id="${it.id}" data-c="${v}"
                 aria-pressed="${cur === v}" title="${LIK_LABEL[v]}"
                 aria-label="${LIK_LABEL[v]}"></button>`).join("")}
-            <span class="lik-end">그렇지<br>않다</span>
+            <span class="lik-end">그렇지 않다</span>
           </div>
         </div>`;
       }
