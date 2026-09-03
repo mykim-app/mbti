@@ -5,7 +5,15 @@ import { renderComboSections } from "./combo.js";
 
 const app = document.getElementById("app");
 const configured = !SUPABASE_URL.includes("여기에") && !SUPABASE_ANON_KEY.includes("여기에");
-const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+// 로그인 상태를 브라우저에 남기지 않는다. 화면을 새로 열면 매번 인증번호를 받아야 한다.
+const sb = configured
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    })
+  : null;
+
+const IDLE_LIMIT = 20 * 60 * 1000;   // 20분 동안 아무 동작이 없으면 자동 로그아웃
+let idleTimer = null;
 
 let email = "";      // 화면에서 직접 입력받는다. 코드에 주소를 넣어두지 않는다.
 let timer = null;
@@ -21,6 +29,25 @@ const ZLABEL = { aries: "양자리", taurus: "황소자리", gemini: "쌍둥이�
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const stopTimer = () => { if (timer) { clearInterval(timer); timer = null; } };
+
+function watchIdle(on) {
+  const reset = () => {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      stopIdle();
+      signOut("자리를 비운 사이 자동으로 로그아웃했습니다.");
+    }, IDLE_LIMIT);
+  };
+  const stop = () => {
+    clearTimeout(idleTimer);
+    ["click", "keydown", "scroll"].forEach((e) => window.removeEventListener(e, reset));
+  };
+  window.stopIdle = stop;
+  if (!on) return stop();
+  ["click", "keydown", "scroll"].forEach((e) => window.addEventListener(e, reset, { passive: true }));
+  reset();
+}
+const stopIdle = () => window.stopIdle && window.stopIdle();
 const valid = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const KO_NUM = { 4: "네", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열" };
 const LEN_KO = (KO_NUM[OTP_LENGTH] || OTP_LENGTH) + " 자리";
@@ -118,6 +145,7 @@ function renderVerify(msg) {
     const { error } = await sb.auth.verifyOtp({ email, token, type: "email" });
     if (error) return renderVerify("인증에 실패했습니다. " + error.message);
     stopTimer();
+    watchIdle(true);
     openList();
   };
   okBtn.addEventListener("click", submit);
@@ -126,7 +154,14 @@ function renderVerify(msg) {
 }
 
 /* ── 3단계: 기록 조회 ──────────────────────────────────── */
+async function requireSession() {
+  if (!sb) return false;
+  const { data } = await sb.auth.getSession();
+  return Boolean(data && data.session);
+}
+
 async function openList() {
+  if (!(await requireSession())) return signOut("다시 인증해 주세요.");
   app.innerHTML = `<h1>검사 기록</h1><p class="lead">불러오는 중입니다.</p>`;
   const { data, error } = await sb
     .from("mbti_results").select("*").order("created_at", { ascending: false });
@@ -226,7 +261,8 @@ function bindTabs() {
     }));
 }
 
-function renderCombo() {
+async function renderCombo() {
+  if (!(await requireSession())) return signOut("다시 인증해 주세요.");
   app.innerHTML = `
     <h1>조합 미리보기</h1>
     ${tabs()}
@@ -300,16 +336,17 @@ function exportCsv(list) {
   URL.revokeObjectURL(a.href);
 }
 
-async function signOut() {
-  await sb.auth.signOut();
+async function signOut(msg) {
+  stopIdle();
+  rows = [];
+  view = "list";
+  try { await sb.auth.signOut(); } catch { /* 이미 끊긴 경우 */ }
   email = "";
-  renderRequest("로그아웃했습니다.", false);
+  renderRequest(msg || "로그아웃했습니다.", false);
 }
 
 /* ── 진입 ──────────────────────────────────────────────── */
 (async () => {
-  if (!sb) return renderRequest("", false);
-  const { data } = await sb.auth.getSession();
-  if (data.session) openList();
-  else renderRequest("", false);
+  // 로그인 상태를 저장하지 않으므로 화면을 열 때마다 인증부터 시작한다.
+  renderRequest("", false);
 })();

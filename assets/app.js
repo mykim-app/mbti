@@ -139,6 +139,11 @@ function renderIntro() {
   app.querySelectorAll(".mode").forEach((b) =>
     b.addEventListener("click", () => {
       state.format = b.dataset.fmt;
+      if (state.format !== "deep") {          // 심화형이 아니면 두 항목을 아예 비운다
+        state.blood = "";
+        state.zodiac = "";
+        state.birth = "";
+      }
       renderIntro();
     }));
   startBtn.addEventListener("click", start);
@@ -427,7 +432,9 @@ function renderResult() {
   const bl = state.format === "deep" ? (BLOOD[state.blood] || null) : null;
   const zo = state.format === "deep"
     ? (ZODIAC.find((z) => z.key === state.zodiac) || null) : null;
-  const fo = fortune(type + (state.blood || "") + (state.zodiac || ""), detail);
+  const fo = fortune(
+    state.format === "deep" ? type + (state.blood || "") + (state.zodiac || "") : type,
+    detail);
   const close = DIMS.filter((d) => dims[d].pctA >= 42 && dims[d].pctA <= 58);
   const today = new Date().toLocaleDateString("ko-KR");
 
