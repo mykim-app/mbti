@@ -263,7 +263,7 @@ function bindTabs() {
     }));
 }
 
-async // 성격유형만 있으면 유형 결과만, 셋 다 있으면 조합까지 보여 준다.
+// 성격유형만 있으면 유형 결과만, 셋 다 있으면 조합까지 보여 준다.
 // 혈액형과 별자리는 둘 다 있어야 조합을 계산하므로 하나만 있으면 알려 준다.
 function comboBody(pick) {
   const base = renderTypeReport(pick.type);
