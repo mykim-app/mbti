@@ -56,17 +56,16 @@ function renderIntro() {
         <b>심화형 120문항</b><span>두 방식 절반씩 · 혈액형·별자리 함께 · 약 18분</span></button>
     </div>
     ${state.format === "deep" ? `
-    <label class="label" for="bl">혈액형 <span class="opt-mark">선택</span></label>
+    <label class="label" for="bl">혈액형 <span class="req-mark">필수</span></label>
     <div class="chipset" id="bl">
       ${["A", "B", "O", "AB"].map((b) =>
         `<button class="cbtn" data-blood="${b}" aria-pressed="${state.blood === b}">${b}형</button>`).join("")}
-      <button class="cbtn" data-blood="" aria-pressed="${!state.blood}">모름</button>
     </div>
 
-    <label class="label">별자리 <span class="opt-mark">선택</span></label>
+    <label class="label">별자리 <span class="req-mark">필수</span></label>
     <div class="zrow">
       <select class="input" id="zsel">
-        <option value="">고르지 않음</option>
+        <option value="" disabled ${state.zodiac ? "" : "selected"}>별자리를 고르세요</option>
         ${ZODIAC.map((z) =>
           `<option value="${z.key}" ${state.zodiac === z.key ? "selected" : ""}>${z.label}</option>`).join("")}
       </select>
@@ -81,6 +80,7 @@ function renderIntro() {
 
 
     <button class="btn" id="start" disabled>검사 시작</button>
+    <p class="needmark" id="needmark"></p>
 
     <div class="note">정답이 없는 검사입니다. 오래 고민할수록 실제 성향과 멀어지니
       각 문항에서 처음 눈에 들어온 답을 고르세요. 끝까지 답하면 유형과 지표별 기울기,
@@ -93,12 +93,28 @@ function renderIntro() {
     <p class="todaycnt" id="todaycnt"></p>`;
 
   showToday();
+  let sync = () => {};
   const nm = document.getElementById("nm");
   const startBtn = document.getElementById("start");
   nm.value = state.name;
-  const sync = () => { state.name = nm.value; startBtn.disabled = !nm.value.trim(); };
+  sync = () => {
+    state.name = nm.value;
+    const needMix = state.format === "deep";
+    const ready = Boolean(nm.value.trim()) &&
+      (!needMix || Boolean(state.blood && state.zodiac));
+    startBtn.disabled = !ready;
+    const why = document.getElementById("needmark");
+    if (why) {
+      why.textContent = !nm.value.trim() ? "이름을 넣어 주세요."
+        : needMix && !state.blood ? "혈액형을 골라 주세요."
+        : needMix && !state.zodiac ? "별자리를 고르거나 생일을 넣어 주세요."
+        : "";
+    }
+  };
   nm.addEventListener("input", sync);
-  nm.addEventListener("keydown", (e) => { if (e.key === "Enter" && nm.value.trim()) start(); });
+  nm.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !startBtn.disabled) start();
+  });
   sync();
 
   app.querySelectorAll(".cbtn").forEach((b) =>
@@ -106,6 +122,7 @@ function renderIntro() {
       state.blood = b.dataset.blood;
       app.querySelectorAll(".cbtn").forEach((o) =>
         o.setAttribute("aria-pressed", o === b));
+      sync();
     }));
 
   const zsel = document.getElementById("zsel");
@@ -114,6 +131,7 @@ function renderIntro() {
   if (zsel && zbirth && zhint) {
   zsel.addEventListener("change", () => {
     state.zodiac = zsel.value;
+    sync();
     if (state.zodiac) { state.birth = ""; zbirth.value = ""; }
     zhint.textContent = state.zodiac
       ? "선택한 별자리: " + (ZODIAC.find((z) => z.key === state.zodiac) || {}).label
@@ -130,8 +148,11 @@ function renderIntro() {
       state.zodiac = z.key;
       zsel.value = z.key;
       zhint.textContent = `${m}월 ${d}일 → ${z.label}`;
+      sync();
     } else {
+      state.zodiac = "";
       zhint.textContent = "그런 날짜는 없습니다. 월-일 형식으로 다시 넣어 주세요.";
+      sync();
     }
   });
   }
