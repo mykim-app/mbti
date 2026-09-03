@@ -19,7 +19,7 @@ const LIK_LABEL = { 3: "매우 그렇다", 2: "그렇다", 1: "조금 그렇다"
 const configured = !SUPABASE_URL.includes("여기에") && !SUPABASE_ANON_KEY.includes("여기에");
 const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-const state = { name: "", format: "choice", perDim: 20, items: [], answers: {}, page: 0, result: null, saved: null };
+const state = { name: "", format: "choice", perDim: 20, noAuto: false, moving: false, items: [], answers: {}, page: 0, result: null, saved: null };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -81,6 +81,8 @@ function start() {
     ? buildScaleItems(state.perDim) : buildItems(state.perDim);
   state.answers = {};
   state.page = 0;
+  state.noAuto = false;
+  state.moving = false;
   state.result = null;
   state.saved = null;
   renderQuiz();
@@ -103,7 +105,7 @@ function renderQuiz() {
       <div class="track"><div class="fill" style="width:${pct}%"></div></div>
     </div>
     ${state.format === "scale" ? ""
-      : `<p class="guide">네 개 중 자신에게 가장 가까운 하나를 고르세요.</p>`}
+      : `<p class="guide">네 개 중 자신에게 가장 가까운 하나를 고르세요. 한 쪽을 다 채우면 다음 쪽으로 넘어갑니다.</p>`}
     ${slice.map((it) => {
       const no = items.indexOf(it) + 1;
       const cur = state.answers[it.id];
@@ -155,14 +157,31 @@ function renderQuiz() {
       document.querySelector(".fill").style.width =
         Math.round((d / state.items.length) * 100) + "%";
       syncNext();
-      // 답을 고르면 아직 답하지 않은 다음 문항으로 화면을 내려 준다.
+      const filled = slice.every((i) => state.answers[i.id] !== undefined);
+      // 이 쪽을 방금 다 채웠고 되돌아온 쪽이 아니라면 다음 쪽으로 넘어간다.
+      // 마지막 쪽은 넘기지 않고 '결과 보기'를 직접 누르게 한다.
+      if (filled && !state.noAuto && page + 1 < pages && !state.moving) {
+        state.moving = true;
+        setTimeout(() => {
+          state.moving = false;
+          state.noAuto = false;
+          state.page = page + 1;
+          renderQuiz();
+          window.scrollTo(0, 0);
+        }, 480);
+        return;
+      }
       setTimeout(() => scrollToNext(b.closest(".q"), slice), 170);
     }));
 
   document.getElementById("prev").addEventListener("click", () => {
-    state.page = Math.max(0, state.page - 1); renderQuiz(); window.scrollTo(0, 0);
+    state.noAuto = true;            // 되돌아온 쪽은 직접 '다음'을 눌러야 넘어간다
+    state.page = Math.max(0, state.page - 1);
+    renderQuiz();
+    window.scrollTo(0, 0);
   });
   nextBtn.addEventListener("click", () => {
+    state.noAuto = false;           // 앞으로 나아가면 자동 넘김을 다시 켠다
     if (page + 1 < pages) { state.page++; renderQuiz(); window.scrollTo(0, 0); }
     else finish();
   });
@@ -225,9 +244,6 @@ function analysisLine(dims) {
    일반 브라우저에서는 인쇄 창을 띄워 'PDF로 저장'을 고르게 한다.
    카카오톡·네이버 같은 앱 안의 화면(웹뷰)에서는 인쇄 창이 뜨지 않으므로
    화면을 직접 A4 크기 PDF로 만들어 내려받는다. */
-const IN_APP = /KAKAOTALK|NAVER|Instagram|FB[AS]V|FBAN|Line\/|DaumApps|everytime|; ?wv\)/i
-  .test(navigator.userAgent);
-
 function loadScript(src) {
   return new Promise((ok, no) => {
     const el = document.createElement("script");
@@ -238,27 +254,21 @@ function loadScript(src) {
   });
 }
 
-async function savePdf(direct) {
+async function savePdf() {
   const sheet = document.querySelector(".sheet");
   if (!sheet) return;
   const hint = document.getElementById("pdfhint");
+  const btn = document.getElementById("pdf");
+  if (btn) { btn.disabled = true; btn.textContent = "만드는 중"; }
+  if (hint) hint.textContent = "PDF를 만들고 있습니다. 10초쯤 걸립니다.";
 
-  if (!direct) {
-    sheet.classList.add("compact");
-    window.print();
-    setTimeout(() => sheet.classList.remove("compact"), 800);
-    return;
-  }
-
-  if (hint) hint.textContent = "PDF를 만드는 중입니다. 잠시 기다려 주세요.";
-
-  // 캡처 중에는 화면 폭에 따라 배치가 달라지지 않도록 고정 폭을 준다.
+  // 찍는 동안에는 폭과 배치를 고정한다.
   const prev = { width: sheet.style.width, maxWidth: sheet.style.maxWidth,
                  padding: sheet.style.padding, background: sheet.style.background };
   sheet.classList.add("compact");
   sheet.style.width = "720px";
   sheet.style.maxWidth = "720px";
-  sheet.style.padding = "8px";
+  sheet.style.padding = "0";
   sheet.style.background = "#ffffff";
   window.scrollTo(0, 0);
 
@@ -269,33 +279,42 @@ async function savePdf(direct) {
     if (!window.jspdf) {
       await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
     }
-    await new Promise((r) => setTimeout(r, 120));   // 배치가 끝나길 기다린다
-
-    const canvas = await window.html2canvas(sheet, {
-      scale: 2,
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: 900,
-      width: sheet.scrollWidth,
-      height: sheet.scrollHeight
-    });
+    await new Promise((r) => setTimeout(r, 120));
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
-    const margin = 12;
-    // 가로·세로 모두 여백 안에 들어가도록 줄여서 한 장에 담는다. 잘리지 않는다.
-    const k = Math.min((pageW - margin * 2) / canvas.width,
-                       (pageH - margin * 2) / canvas.height);
-    const w = canvas.width * k;
-    const h = canvas.height * k;
-    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG",
-      (pageW - w) / 2, margin, w, h);
-    pdf.save(`성격유형결과_${state.name.trim() || "결과"}_${state.result.type}.pdf`);
+    const margin = 13;
+    const contentW = pageW - margin * 2;
+    const bottom = pageH - margin;
+    const gap = 3;
 
+    // 덩어리 하나가 쪽 경계에 걸치면 통째로 다음 쪽으로 넘긴다. 그래서 잘리지 않는다.
+    const blocks = Array.from(sheet.children).filter((el) => el.offsetHeight > 0);
+    let y = margin;
+    let first = true;
+
+    for (const el of blocks) {
+      const canvas = await window.html2canvas(el, {
+        scale: 2, backgroundColor: "#ffffff", useCORS: true,
+        scrollX: 0, scrollY: 0, windowWidth: 900,
+        width: el.scrollWidth, height: el.scrollHeight
+      });
+      let w = contentW;
+      let h = (canvas.height / canvas.width) * w;
+      // 한 덩어리가 한 쪽보다 크면 그 덩어리만 줄여서 한 쪽에 담는다.
+      if (h > bottom - margin) {
+        const k = (bottom - margin) / h;
+        h *= k; w *= k;
+      }
+      if (!first && y + h > bottom) { pdf.addPage(); y = margin; }
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", margin, y, w, h);
+      y += h + gap;
+      first = false;
+    }
+
+    pdf.save(`성격유형결과_${state.name.trim() || "결과"}_${state.result.type}.pdf`);
     if (hint) hint.textContent = "PDF를 내려받았습니다. 파일 앱이나 다운로드 폴더에서 확인하세요.";
   } catch (e) {
     if (hint) {
@@ -308,6 +327,7 @@ async function savePdf(direct) {
     sheet.style.maxWidth = prev.maxWidth;
     sheet.style.padding = prev.padding;
     sheet.style.background = prev.background;
+    if (btn) { btn.disabled = false; btn.textContent = "PDF로 저장"; }
   }
 }
 
@@ -449,14 +469,9 @@ function renderResult() {
     <button class="btn-ghost" id="again">처음으로</button>
   </div>
   <p class="lead noprint" id="pdfhint" style="font-size:12.5px;margin-top:10px">
-    ${IN_APP
-      ? "PDF 파일이 바로 내려받아집니다. 저장이 되지 않으면 이 화면을 기본 브라우저에서 열어 주세요."
-      : "인쇄 창이 열리면 대상(프린터)을 'PDF로 저장'으로 고르세요. A4 한 장으로 나옵니다."}</p>
-  <p class="lead noprint" style="font-size:12.5px;margin-top:4px">
-    <button class="link" id="pdfalt">저장이 안 되면 여기를 눌러 파일로 내려받기</button></p>`;
+    A4 파일로 내려받습니다. 내용이 길면 두 쪽으로 나뉘며, 항목이 쪽 경계에서 잘리지 않습니다.</p>`;
 
-  document.getElementById("pdf").addEventListener("click", () => savePdf(IN_APP));
-  document.getElementById("pdfalt").addEventListener("click", () => savePdf(true));
+  document.getElementById("pdf").addEventListener("click", () => savePdf());
   document.getElementById("again").addEventListener("click", () => { state.name = ""; renderIntro(); });
 }
 
