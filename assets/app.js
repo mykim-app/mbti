@@ -9,6 +9,7 @@ import { renderStrengths, renderMatch, renderJobs } from "./report.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 const app = document.getElementById("app");
+window.__loaded = true;   // 화면 스크립트가 실행됐다는 표시
 const PER_PAGE = 5;
 const VERSION = "3.0";
 const LIK = [
@@ -211,8 +212,15 @@ function renderQuiz() {
       </div>
       <div class="track"><div class="fill" style="width:${pct}%"></div></div>
     </div>
-    ${slice.every((i) => i.scale) ? ""
-      : `<p class="guide">네 개 중 자신에게 가장 가까운 하나를 고르세요. 한 쪽을 다 채우면 다음 쪽으로 넘어갑니다.</p>`}
+    ${(() => {
+      const allScale = slice.every((i) => i.scale);
+      const prev = page > 0 ? items[page * PER_PAGE - 1] : null;
+      // 척도 문항이 끝나고 선택 문항이 시작되는 쪽에서 한 번 알려 준다.
+      const turning = !allScale && prev && prev.scale;
+      if (allScale) return "";
+      return `${turning ? `<p class="turn">여기부터는 답을 고르는 문항입니다.</p>` : ""}
+        <p class="guide">네 개 중 자신에게 가장 가까운 하나를 고르세요. 한 쪽을 다 채우면 다음 쪽으로 넘어갑니다.</p>`;
+    })()}
     ${slice.map((it) => {
       const no = items.indexOf(it) + 1;
       const cur = state.answers[it.id];

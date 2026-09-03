@@ -165,7 +165,10 @@ export function matchTable(type, all) {
    두 방식의 만점이 달라(일반형 30점, 척도형 45점) 척도형 쪽을 2/3로 맞춰
    양쪽이 같은 무게로 반영되게 한다. */
 export function buildDeepItems(perDimEach = 15) {
-  return shuffle([...buildItems(perDimEach), ...buildScaleItems(perDimEach)]);
+  // 두 방식을 섞어 내면 답하는 요령이 계속 바뀌어 눈이 피로하다.
+  // 그래서 척도 문항을 모두 끝낸 뒤 선택 문항으로 넘어가게 한다.
+  // 어느 문항이 뽑히는지, 그 안에서의 순서는 그대로 무작위다.
+  return [...buildScaleItems(perDimEach), ...buildItems(perDimEach)];
 }
 
 export function scoreDeep(items, answers) {
