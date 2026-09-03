@@ -158,12 +158,15 @@ export function comboRank(me, limit = 5) {
       if (seen.has(r.type)) continue;
       seen.add(r.type);
       const tied = out.filter((x) => x.type === r.type && x.total === r.total);
-      const zs = [...new Set(tied.map((x) => x.zodiac).filter(Boolean))].map(zLabel);
-      const bs = [...new Set(tied.map((x) => x.blood).filter(Boolean))].map((b) => BLOOD[b].label);
+      // 같은 점수인 것이 셋을 넘으면 이름이 너무 길어져 화면에서 여러 줄로 갈린다.
+      // 그래서 둘까지만 적고 나머지는 개수로 줄인다.
+      const brief = (list) => list.length > 2
+        ? `${list[0]} 외 ${list.length - 1}곳` : list.join("·");
+      const zs = brief([...new Set(tied.map((x) => x.zodiac).filter(Boolean))].map(zLabel));
+      const bs = brief([...new Set(tied.map((x) => x.blood).filter(Boolean))].map((b) => BLOOD[b].label));
       const label = [
-        bs.length ? bs.join("·") : "",
-        zs.length ? zs.join("·") : "",
-        bs.length || zs.length ? r.type : `${r.type} · ${TYPE_INFO[r.type][0]}`
+        bs, zs,
+        bs || zs ? r.type : `${r.type} · ${TYPE_INFO[r.type][0]}`
       ].filter(Boolean).join(" · ");
       res.push({ ...r, label, tiedCount: tied.length });
     }
