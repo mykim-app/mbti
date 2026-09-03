@@ -23,13 +23,24 @@ const ZODIAC_SHORT = {
   pisces: "스며드는 감성"
 };
 
-// 혈액형끼리의 궁합 (통설 기반, 어느 쪽에서 보아도 같다)
+/* 혈액형끼리의 궁합. 여러 곳에서 되풀이되는 통설을 모아 맞췄다.
+   A-O 를 가장 높게, B-AB 를 그다음으로 보는 설명이 가장 흔하다.
+   같은 혈액형끼리는 편하지만 부딪히기도 한다고 보아 중간에 둔다.
+   어느 쪽에서 보아도 값이 같으며, 가장 낮은 조합도 60 에서 멈춘다. */
+// 키는 두 글자를 정렬해 만든다. AB 는 B·O 보다 앞서므로 "AB|B", "AB|O" 가 된다.
 const BLOOD_FIT = {
-  "A|A": 78, "A|B": 60, "A|O": 85, "A|AB": 70,
-  "B|B": 74, "B|O": 65, "B|AB": 88,
-  "O|O": 80, "O|AB": 63, "AB|AB": 72
+  "A|O": 92,    // 서로 부족한 곳을 채운다는 설명이 가장 널리 퍼져 있다
+  "AB|B": 88,   // 다름이 오히려 끌린다고 본다
+  "B|O": 80,    // 활기가 잘 맞는 조합으로 꼽힌다
+  "A|A": 75, "B|B": 75, "A|AB": 74, "AB|AB": 72,
+  "O|O": 70,    // 둘 다 앞에 서려 해 부딪힌다고 본다
+  "AB|O": 62, "A|B": 60
 };
-const bloodFit = (a, b) => BLOOD_FIT[[a, b].sort().join("|")] || 65;
+function bloodFit(a, b) {
+  const v = BLOOD_FIT[[a, b].sort().join("|")];
+  if (v === undefined) console.warn("혈액형 궁합 값이 없습니다:", a, b);
+  return v === undefined ? 70 : v;
+}
 
 // 별자리는 네 원소로 나눠 본다
 const ELEM = {
@@ -38,9 +49,14 @@ const ELEM = {
   gemini: "공기", libra: "공기", aquarius: "공기",
   cancer: "물", scorpio: "물", pisces: "물"
 };
+/* 점성술에서 쓰는 각도 개념을 원소로 옮긴 값이다.
+   같은 원소(120도)는 자연스러운 조화, 불-공기와 흙-물(180도를 포함)은 서로를 부추기는
+   관계로 본다. 마주 보는 별자리는 늘 이 두 묶음에 들어가므로 낮게 잡지 않는다.
+   나머지(90도)는 노력이 필요한 조합이지만 '최악'은 없다고 보아 60대에서 멈춘다. */
 const ELEM_FIT = { "불|불": 88, "흙|흙": 88, "공기|공기": 88, "물|물": 88,
-  "공기|불": 84, "물|흙": 84, "불|흙": 62, "물|불": 58, "공기|흙": 64, "공기|물": 60 };
+  "공기|불": 85, "물|흙": 85, "불|흙": 64, "물|불": 62, "공기|흙": 64, "공기|물": 62 };
 function zodiacFit(a, b) {
+  // 같은 별자리끼리는 깊이 이해하지만 같은 약점을 공유한다고 본다.
   if (a === b) return 75;
   return ELEM_FIT[[ELEM[a], ELEM[b]].sort().join("|")] || 65;
 }
@@ -89,7 +105,10 @@ export function comboProfile(type, bloodKey, zodiacKey) {
 /* ── 조합끼리의 궁합 ─────────────────────────────────── */
 // 성격유형 6 : 혈액형 2 : 별자리 2 의 비중으로 합친다.
 export function comboScore(a, b) {
-  const m = matchScores(a.type, b.type).total;
+  const s = matchScores(a.type, b.type);
+  // 조합 궁합은 가까운 사이를 전제로 하므로 연애 점수를 쓴다.
+  // 일·친구까지 섞으면 판단 기준이 같은 쪽이 유리해져, 앞의 궁합 카드와 순위가 어긋난다.
+  const m = s.love;
   const bf = a.blood && b.blood ? bloodFit(a.blood, b.blood) : 65;
   const zf = a.zodiac && b.zodiac ? zodiacFit(a.zodiac, b.zodiac) : 65;
   return { total: Math.round(m * 0.6 + bf * 0.2 + zf * 0.2), mbti: m, blood: bf, zodiac: zf };
@@ -169,8 +188,9 @@ export function renderComboSections(me) {
 
     <section class="blk pb">
       <h2 class="sec">조합으로 본 궁합 순위</h2>
-      <p class="jenv">성격유형 6, 혈액형 2, 별자리 2의 비중으로 합한 점수입니다.
-        성격유형마다 가장 높은 조합 하나씩만 골라 늘어놓았습니다.</p>
+      <p class="jenv">가까운 사이를 전제로 한 순위입니다. 성격유형 6, 혈액형 2, 별자리 2의
+        비중으로 합했고, 유형마다 가장 높은 조합 하나씩만 골라 늘어놓았습니다.
+        일에서의 궁합은 앞의 표를 보세요.</p>
       <p class="sub">잘 맞는 조합</p>
       <div class="crows">${rank.top.map((r, i) => row(r, i, "cgood")).join("")}</div>
       <p class="sub">어려울 수 있는 조합</p>
