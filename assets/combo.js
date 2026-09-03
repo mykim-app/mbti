@@ -25,9 +25,9 @@ const ZODIAC_SHORT = {
 
 // 혈액형끼리의 궁합 (통설 기반, 어느 쪽에서 보아도 같다)
 const BLOOD_FIT = {
-  "A|A": 78, "A|B": 55, "A|O": 85, "A|AB": 70,
-  "B|B": 74, "B|O": 62, "B|AB": 88,
-  "O|O": 80, "O|AB": 60, "AB|AB": 72
+  "A|A": 78, "A|B": 60, "A|O": 85, "A|AB": 70,
+  "B|B": 74, "B|O": 65, "B|AB": 88,
+  "O|O": 80, "O|AB": 63, "AB|AB": 72
 };
 const bloodFit = (a, b) => BLOOD_FIT[[a, b].sort().join("|")] || 65;
 
@@ -39,7 +39,7 @@ const ELEM = {
   cancer: "물", scorpio: "물", pisces: "물"
 };
 const ELEM_FIT = { "불|불": 88, "흙|흙": 88, "공기|공기": 88, "물|물": 88,
-  "공기|불": 84, "물|흙": 84, "불|흙": 58, "물|불": 52, "공기|흙": 60, "공기|물": 55 };
+  "공기|불": 84, "물|흙": 84, "불|흙": 62, "물|불": 58, "공기|흙": 64, "공기|물": 60 };
 function zodiacFit(a, b) {
   if (a === b) return 75;
   return ELEM_FIT[[ELEM[a], ELEM[b]].sort().join("|")] || 65;
@@ -194,7 +194,8 @@ export function renderComboSections(me) {
               <span class="cscore">${z.score}</span></div>`).join("")}</div></div>` : ""}
       </div>
       <p class="mixfoot">혈액형과 별자리로 성격을 나누는 것은 널리 알려진 이야기일 뿐,
-        연구로 확인된 바가 없습니다. 순위도 통계가 아니라 위에 적은 비중으로 계산한 값입니다.
+        연구로 확인된 바가 없습니다. 성격유형 궁합 역시 연구로 뒷받침된 것이 아닙니다.
+        낮게 나온 조합도 안 맞는 사이라는 뜻이 아니라 서로 다른 지점이 많다는 정도이니,
         재미로 봐 주세요.</p>
     </section>`;
 }

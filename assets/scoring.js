@@ -125,25 +125,28 @@ export function scoreScale(items, answers) {
 }
 
 /* ── 유형 간 궁합 점수 ─────────────────────────────────────
-   연애·일·친구 세 가지로 나눠 계산한다. 무엇을 얼마나 반영하는지는 아래가 전부다.
+   널리 쓰이는 이론을 따라 계산한다. 요지는 세 가지다.
 
-   연애 : 보는 방식이 같으면 크게 더하고, 안팎 성향과 생활 방식은
-          서로 반대일 때 더한다(부족한 쪽을 채워 주므로).
-   일   : 판단 기준과 일하는 방식이 같을 때 크게 더한다.
-   친구 : 보는 방식과 노는 결이 같을 때 더한다.
+   1) 보는 방식(S/N)이 같아야 말이 통한다. 여기가 어긋나면 대화가 겉돈다.
+   2) 판단 기준(T/F)은 오히려 다를 때 서로를 채워 준다. 흔히 '황금 조합'이라 부른다.
+      일에서는 반대로 같은 편이 손발이 맞는다.
+   3) 안팎 성향(E/I)과 생활 방식(J/P)이 다른 것은 큰 흠이 아니다. 조금 더해 준다.
 
+   같은 글자가 많다고 점수가 높아지지 않으며, 바닥은 40점이다.
+   어떤 조합도 '안 맞는 사이'로 못박지 않기 위해서다.
    통계 조사값이 아니라 네 지표의 조합으로 매긴 참고 점수다. */
 const W = {
-  love:   { sn: 30, tf: 20, ei: 25, jp: 15, base: 10, eiSame: false, jpSame: false },
-  work:   { sn: 25, tf: 25, ei: 10, jp: 30, base: 10, eiSame: false, jpSame: true },
-  friend: { sn: 35, tf: 20, ei: 20, jp: 15, base: 10, eiSame: true, jpSame: true }
+  //         S/N 같음  T/F      E/I      J/P      바닥
+  love:   { sn: 25, tf: 15, ei: 10, jp: 10, base: 40, tfSame: false, eiSame: false, jpSame: false },
+  work:   { sn: 15, tf: 15, ei: 10, jp: 20, base: 40, tfSame: true,  eiSame: false, jpSame: true },
+  friend: { sn: 25, tf: 10, ei: 10, jp: 15, base: 40, tfSame: true,  eiSame: true,  jpSame: true }
 };
 
 export function matchScores(a, b) {
   const same = [0, 1, 2, 3].map((i) => a[i] === b[i]);   // E/I, S/N, T/F, J/P
   const calc = (w) =>
     (same[1] ? w.sn : 0) +
-    (same[2] ? w.tf : 0) +
+    ((w.tfSame ? same[2] : !same[2]) ? w.tf : 0) +
     ((w.eiSame ? same[0] : !same[0]) ? w.ei : 0) +
     ((w.jpSame ? same[3] : !same[3]) ? w.jp : 0) + w.base;
   const love = calc(W.love), work = calc(W.work), friend = calc(W.friend);
