@@ -62,9 +62,9 @@ export function renderMatch(type) {
 
     <section class="blk pb">
       <h2 class="sec">연애 · 일 · 친구로 나눠 본 궁합</h2>
-      <p class="jenv">위의 두 유형은 성향의 결을, 아래 표는 상황별 맞물림을 봅니다.
-        연애는 보는 방식이 같고 판단 기준이 다를 때, 일은 판단 기준과 일하는 방식이
-        같을 때 높게 잡히므로 두 순위가 다를 수 있습니다.</p>
+      <p class="jenv">위의 두 유형은 성격이 비슷한지를, 아래 표는 어떤 사이일 때 잘 맞는지를
+        봅니다. 연애는 서로 다른 점이 있을 때, 일은 비슷할 때 점수가 높게 나오므로
+        두 순위가 다를 수 있습니다.</p>
       ${mtable(table.slice(0, 8))}
     </section>
     <div class="pb mtail">${mtable(table.slice(8))}</div>`;

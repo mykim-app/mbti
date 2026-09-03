@@ -9,10 +9,10 @@ const BLOODS = Object.keys(BLOOD);
 
 // 지표별로 그 성향이 겉으로 드러나는 모습
 const TRAIT = {
-  EI: { E: "먼저 다가가 말로 푸는 면", I: "혼자 정리하고 안으로 삭이는 면" },
-  SN: { S: "눈앞의 사실부터 챙기는 면", N: "뜻과 가능성을 먼저 보는 면" },
-  TF: { T: "기준으로 잘라 판단하는 면", F: "사람의 사정을 살피는 면" },
-  JP: { J: "미리 정해 두고 지키는 면", P: "상황을 보며 맞춰 가는 면" }
+  EI: { E: "먼저 말을 거는 성격", I: "혼자 생각을 정리하는 성격" },
+  SN: { S: "눈에 보이는 것부터 챙기는 성격", N: "앞일을 먼저 그려 보는 성격" },
+  TF: { T: "따질 것은 따지는 성격", F: "상대 마음을 먼저 살피는 성격" },
+  JP: { J: "미리 정해 두는 성격", P: "그때그때 맞춰 가는 성격" }
 };
 
 const BLOOD_SHORT = { A: "신중함", B: "자유로움", O: "밀고 가는 힘", AB: "거리를 두는 시선" };
@@ -78,26 +78,36 @@ export function comboProfile(type, bloodKey, zodiacKey) {
   if (bl) parts.push(`${bl.label}의 ${BLOOD_SHORT[bloodKey]}`);
   if (zo) parts.push(`${zo.label}의 ${ZODIAC_SHORT[zodiacKey]}`);
   const head = parts.length
-    ? `${TYPE_INFO[type][0]}인 ${type}에 ${parts.join("과 ")}이 겹칩니다.`
+    ? `${TYPE_INFO[type][0]}인 ${type}에 ${parts.join("과 ")}이 더해진 조합입니다.`
     : `${TYPE_INFO[type][0]}인 ${type}입니다.`;
 
-  const deep = [], split = [];
-  const walk = (src, key) => {
+  // 같은 성향을 여럿이 함께 가리키면 한 줄로 묶어, 같은 말이 되풀이되지 않게 한다.
+  const agree = new Map();   // 지표 → 함께 가리킨 것들의 이름
+  const clash = [];
+  const walk = (src) => {
     if (!src) return;
-    const name = key === "blood" ? src.label : src.label;
     for (const d of DIMS) {
       const want = (src.lean || {})[d];
       if (!want) continue;
       if (want === mine[d]) {
-        deep.push(`${TRAIT[d][want]}이 한층 짙어집니다. ${name}${eun(name)} 같은 방향을 가리킵니다.`);
+        if (!agree.has(d)) agree.set(d, []);
+        agree.get(d).push(src.label);
       } else {
-        split.push(`${name}${eun(name)} ${TRAIT[d][want]}을 말하지만, 검사에서는 ` +
-          `${TRAIT[d][mine[d]]}이 나왔습니다. 평소에는 뒤쪽이 앞서고 편한 자리에서 앞쪽이 비칠 수 있습니다.`);
+        clash.push({ name: src.label, theirs: TRAIT[d][want], mine: TRAIT[d][mine[d]] });
       }
     }
   };
-  walk(bl, "blood");
-  walk(zo, "zodiac");
+  walk(bl);
+  walk(zo);
+
+  const deep = [...agree.entries()].map(([d, names]) => {
+    const who = names.join("과 ");
+    return `${TRAIT[d][mine[d]]}입니다. ${who}도 같은 쪽을 말하니, 이 면이 더 두드러질 수 있습니다.`;
+  });
+
+  const split = clash.map(({ name, theirs, mine: m }) =>
+    `${name}${eun(name)} ${theirs}이라고 하지만, 검사 결과는 ${m}으로 나왔습니다. ` +
+    `둘 중에서는 검사 쪽이 더 가깝다고 보시면 됩니다.`);
 
   return { head, deep, split, label: [bl && bl.label, zo && zo.label, type].filter(Boolean).join(" · ") };
 }
@@ -201,19 +211,19 @@ export function renderComboSections(me) {
     ${(p.deep.length || p.split.length) ? `<section class="blk pb">
       <h2 class="sec">${esc(p.label)}인 사람</h2>
       <p class="mixdesc">${esc(p.head)}</p>
-      ${p.deep.length ? `<p class="sub">더 짙어지는 면</p>
+      ${p.deep.length ? `<p class="sub">더 뚜렷하게 나타날 수 있는 성격</p>
         <ul class="rlist">${p.deep.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
-      ${p.split.length ? `<p class="sub">두 갈래로 보이는 면</p>
+      ${p.split.length ? `<p class="sub">서로 다르게 말하는 부분</p>
         <ul class="rlist">${p.split.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
     </section>` : ""}
 
     <section class="blk pb">
       <h2 class="sec">조합으로 본 궁합 순위</h2>
       <p class="jenv">${full
-        ? "가까운 사이를 전제로 한 순위입니다. 성격유형 6, 혈액형 2, 별자리 2의 비중으로 합했고, 유형마다 가장 높은 조합 하나씩만 골라 늘어놓았습니다. 일에서의 궁합은 앞의 표를 보세요."
+        ? "연인이나 친한 사이를 놓고 본 순위입니다. 성격유형을 6, 혈액형을 2, 별자리를 2만큼 반영했고, 성격유형마다 점수가 가장 높은 조합 하나씩만 골랐습니다. 같은 점수인 조합은 한 줄에 함께 적었습니다."
         : (me.blood || me.zodiac)
-        ? `가까운 사이를 전제로 한 순위입니다. 넣지 않은 항목은 셈에서 빼고 ${me.blood ? "성격유형과 혈액형" : "성격유형과 별자리"}만으로 견주었습니다.`
-        : "혈액형과 별자리가 없어 성격유형만으로 견준 순위입니다. 가까운 사이를 전제로 합니다."}</p>
+        ? `연인이나 친한 사이를 놓고 본 순위입니다. 넣지 않은 항목은 빼고 ${me.blood ? "성격유형과 혈액형" : "성격유형과 별자리"}만으로 비교했습니다.`
+        : "혈액형과 별자리를 넣지 않아 성격유형만으로 비교한 순위입니다."}</p>
       <p class="sub">잘 맞는 조합</p>
       <div class="crows">${rank.top.map((r, i) => row(r, i, "cgood")).join("")}</div>
       <p class="sub">어려울 수 있는 조합</p>
@@ -237,7 +247,7 @@ export function renderComboSections(me) {
               <span class="cscore">${z.score}</span></div>`).join("")}</div></div>` : ""}
       </div>
       <div class="lookup noprint" data-me="${esc(me.type)}|${esc(me.blood || "")}|${esc(me.zodiac || "")}">
-        <p class="sub">상대 조합 찾아보기</p>
+        <p class="sub">궁금한 조합 찾아보기</p>
         <div class="lookrow">
           <select class="input" data-lk="blood">${Object.keys(BLOOD).map((b) =>
             `<option value="${b}">${BLOOD[b].label}</option>`).join("")}</select>
@@ -249,10 +259,10 @@ export function renderComboSections(me) {
         <p class="lookout" data-lk="out"></p>
       </div>
 
-      <p class="mixfoot">혈액형과 별자리로 성격을 나누는 것은 널리 알려진 이야기일 뿐,
-        연구로 확인된 바가 없습니다. 성격유형 궁합 역시 연구로 뒷받침된 것이 아닙니다.
-        낮게 나온 조합도 안 맞는 사이라는 뜻이 아니라 서로 다른 지점이 많다는 정도이니,
-        재미로 봐 주세요.</p>
+      <p class="mixfoot">혈액형이나 별자리로 성격을 나누는 이야기는 널리 퍼져 있지만
+        연구로 밝혀진 것은 아닙니다. 성격유형 궁합도 마찬가지입니다.
+        점수가 낮게 나왔다고 안 맞는 사이라는 뜻이 아니라, 서로 다른 점이 많다는 정도입니다.
+        재미로만 봐 주세요.</p>
     </section>` : ""}`;
 }
 

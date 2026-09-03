@@ -34,9 +34,9 @@ function renderIntro() {
   app.innerHTML = `
     <h1>성격유형 검사 <span class="ver">v${VERSION}</span></h1>
     <p class="lead">${state.format === "simple"
-      ? "문장을 읽고 얼마나 그런지 일곱 단계 중 하나를 고릅니다. 가장 빠르게 끝납니다."
+      ? "문장을 읽고 나에게 얼마나 맞는지 일곱 단계 중 하나를 고릅니다. 가장 빨리 끝납니다."
       : state.format === "deep"
-      ? "두 가지 방식이 섞여 나옵니다. 문항이 많은 만큼 지표의 기울기가 더 촘촘하게 잡히고, 혈액형·별자리를 함께 볼 수 있습니다."
+      ? "두 가지 방식이 차례로 나옵니다. 문항이 많아 결과가 더 정확하고, 혈액형·별자리도 함께 볼 수 있습니다."
       : "각 질문마다 네 개의 답 중 자신에게 가장 가까운 하나를 고릅니다."}
       직장에서의 모습보다 <b>평소 편할 때의 나</b>를 기준으로, 오래 고민하지 말고 첫 반응대로 골라 주세요.</p>
 
@@ -500,7 +500,7 @@ function renderResult() {
     </div>
 
     <section class="blk pb">
-      <h2 class="sec">지표별 기울기</h2>
+      <h2 class="sec">네 가지 성향</h2>
       ${axes}
       <p class="ranal">${analysisLine(dims)}</p>
     </section>
