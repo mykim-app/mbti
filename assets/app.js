@@ -291,7 +291,10 @@ async function savePdf() {
     const gap = 3;
 
     // 덩어리 하나가 쪽 경계에 걸치면 통째로 다음 쪽으로 넘긴다. 그래서 잘리지 않는다.
-    const blocks = Array.from(sheet.children).filter((el) => el.offsetHeight > 0);
+    // pb 표시가 붙은 덩어리 단위로 쪽을 채운다. 작은 덩어리라 앞쪽이 촘촘히 찬다.
+    const marked = sheet.querySelectorAll(".pb");
+    const blocks = Array.from(marked.length ? marked : sheet.children)
+      .filter((el) => el.offsetHeight > 0);
     let y = margin;
     let first = true;
 
@@ -361,6 +364,14 @@ function renderResult() {
     </div>`;
   }).join("");
 
+  const mtable = (rows) => `<table class="tbl mt">
+    <thead><tr><th>유형</th><th>연애</th><th>일</th><th>친구</th><th>종합</th></tr></thead>
+    <tbody>${rows.map((r) => `<tr>
+      <td class="mtype">${r.type}<span class="mlab">${(TYPE_INFO[r.type] || [""])[0]}</span></td>
+      <td class="num">${r.love}</td><td class="num">${r.work}</td>
+      <td class="num">${r.friend}</td><td class="num mtot">${r.total}</td>
+    </tr>`).join("")}</tbody></table>`;
+
   const pair = (arr, cls) => (arr || []).map(([t, why, kind, pct], i) =>
     `<div class="pair ${cls}">
       <b><span class="rank">${i + 1}순위</span> ${t}</b>
@@ -371,6 +382,7 @@ function renderResult() {
 
   app.innerHTML = `
   <div class="sheet">
+    <div class="pb">
     <header class="rhead">
       <div>
         <p class="rname">${esc(state.name)} 님의 성격유형 결과</p>
@@ -380,14 +392,15 @@ function renderResult() {
       <div class="rmeta">${today}<br>${state.items.length}문항</div>
     </header>
     <p class="rdesc">${info[1]}</p>
+    </div>
 
-    <section class="blk">
+    <section class="blk pb">
       <h2 class="sec">지표별 기울기</h2>
       ${axes}
       <p class="ranal">${analysisLine(dims)}</p>
     </section>
 
-    <div class="cols blk">
+    <div class="cols blk pb">
       <section>
         <h2 class="sec">강점</h2>
         <ul class="rlist">${(detail.strong || []).map((t) => `<li>${t}</li>`).join("")}</ul>
@@ -398,31 +411,23 @@ function renderResult() {
       </section>
     </div>
 
-    <section class="blk">
+    <section class="blk pb">
       <h2 class="sec">다른 유형과의 궁합</h2>
       <div class="cols">
         <div><p class="sub">결이 잘 맞는 유형</p><div class="pairs">${pair(match.fit, "fitp")}</div></div>
         <div><p class="sub">부딪히기 쉬운 유형</p><div class="pairs">${pair(match.hard, "hardp")}</div></div>
       </div>
-
-      <h2 class="sec sub2">연애 · 일 · 친구로 나눠 본 궁합</h2>
-      <p class="jenv">위의 두 유형은 성향의 결을 본 것이고, 아래 표는 상황별로 따로 계산한 것이라
-        순위가 다를 수 있습니다.</p>
-      <div class="mfull">
-        <table class="tbl mt">
-          <thead><tr><th>유형</th><th>연애</th><th>일</th><th>친구</th><th>종합</th></tr></thead>
-          <tbody>${table.map((r) => `<tr>
-            <td class="mtype">${r.type}<span class="mlab">${(TYPE_INFO[r.type] || [""])[0]}</span></td>
-            <td class="num">${r.love}</td><td class="num">${r.work}</td>
-            <td class="num">${r.friend}</td><td class="num mtot">${r.total}</td>
-          </tr>`).join("")}</tbody>
-        </table>
-      </div>
-      <div class="mmini">${table.map((r) =>
-        `<span class="mchip"><b>${r.type}</b>${r.total}</span>`).join("")}</div>
     </section>
 
-    <section class="blk">
+    <section class="blk pb">
+      <h2 class="sec">연애 · 일 · 친구로 나눠 본 궁합</h2>
+      <p class="jenv">위의 두 유형은 성향의 결을 본 것이고, 아래 표는 상황별로 따로 계산한 것이라
+        순위가 다를 수 있습니다.</p>
+      ${mtable(table.slice(0, 8))}
+    </section>
+    <div class="pb mtail">${mtable(table.slice(8))}</div>
+
+    <section class="blk pb">
       <h2 class="sec">어울리는 일</h2>
       <p class="jenv">${esc(job.env || "")}</p>
       <ol class="jrank">${(job.jobs || []).slice(0, 3).map((j) =>
@@ -432,7 +437,7 @@ function renderResult() {
         `<span class="jchip">${esc(j)}</span>`).join("")}</div>` : ""}
     </section>
 
-    <p class="rfoot">v${VERSION} · ${state.items.length}문항 기준의 참고 결과입니다.
+    <p class="rfoot pb">v${VERSION} · ${state.items.length}문항 기준의 참고 결과입니다.
       같은 사람이 몇 주 뒤 다시 하면 한 지표가 바뀌기도 합니다.
       궁합의 백분율은 통계 조사값이 아니라 네 지표의 조합으로 매긴 참고 점수이며, 연애·일·친구 점수도 같은 방식으로 계산했습니다. 관계나 진로를 정하는 근거로 쓰지 않습니다.</p>
   </div>

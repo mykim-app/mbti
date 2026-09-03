@@ -238,12 +238,10 @@ a.link{display:inline-block}
 .mtype{font-weight:700;letter-spacing:.03em}
 .mlab{font-weight:400;letter-spacing:0;color:var(--soft);font-size:11.5px;margin-left:6px}
 .mtot{font-weight:800}
-.mmini{display:none}
 .mchip{border:1px solid var(--rule);border-radius:3px;padding:3px 5px;
   font-size:9px;font-variant-numeric:tabular-nums;text-align:center;background:var(--card)}
 .mchip b{display:block;font-size:9.5px;letter-spacing:.03em}
-.compact .mmini{display:none}
-.compact .mt td{padding:4px 6px;font-size:10.5px}
+.compact .compact .mt td{padding:4px 6px;font-size:10.5px}
 .compact .mt th{padding:5px 6px;font-size:10.5px}
 .compact .mlab{font-size:9.5px}
 .compact .sub2{margin-top:13px}
@@ -265,3 +263,6 @@ a.link{display:inline-block}
 .fort-list li{font-size:13.5px;line-height:1.65;margin-bottom:3px}
 .fort-list b{margin-right:5px}
 .fort-foot{font-size:11.5px;color:var(--soft);margin:12px 0 0;line-height:1.5}
+.mtail{margin-top:2px}
+.mtail .mt thead{display:none}
+.compact .mtail{margin-top:1px}
