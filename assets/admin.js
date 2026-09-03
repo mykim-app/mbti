@@ -23,6 +23,8 @@ let rows = [];
 let query = "";
 let view = "list";                                   // list | combo
 let pick = { type: "ISTJ", blood: "A", zodiac: "aries" };
+const PAGE_SIZE = 12;              // 한 쪽에 보여 줄 기록 수
+let page = 0;
 
 const ZLABEL = { aries: "양자리", taurus: "황소자리", gemini: "쌍둥이자리", cancer: "게자리",
   leo: "사자자리", virgo: "처녀자리", libra: "천칭자리", scorpio: "전갈자리",
@@ -148,6 +150,7 @@ function renderVerify(msg) {
     if (error) return renderVerify("인증에 실패했습니다. " + error.message);
     stopTimer();
     watchIdle(true);
+    guardBack();
     openList();
   };
   okBtn.addEventListener("click", submit);
@@ -175,6 +178,7 @@ async function openList() {
     return;
   }
   rows = data || [];
+  page = 0;
   renderList();
 }
 
@@ -183,6 +187,10 @@ function renderList() {
   const dist = {};
   for (const r of list) dist[r.mbti_type] = (dist[r.mbti_type] || 0) + 1;
   const top = Object.entries(dist).sort((a, b) => b[1] - a[1]).slice(0, 6);
+
+  const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  if (page >= pages) page = pages - 1;
+  const slice = list.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
   app.innerHTML = `
     <h1>검사 기록</h1>
@@ -195,36 +203,50 @@ function renderList() {
     ${top.length ? `<div class="row" style="margin-bottom:18px">${top.map(([t, n]) =>
       `<span class="chip">${t} ${n}</span>`).join("")}</div>` : ""}
     ${list.length === 0 ? `<p class="lead">표시할 기록이 없습니다.</p>` : `
-    <div class="scroll"><table class="tbl rec">
-      <thead><tr><th>이름</th><th>유형</th><th>혈액형</th><th>별자리</th>
-        <th>E·I</th><th>S·N</th><th>T·F</th><th>J·P</th>
-        <th>문항</th><th>검사일</th><th></th></tr></thead>
-      <tbody>${list.map((r) => `<tr data-row="${r.id}" class="clickrow" title="눌러서 조합 결과 보기">
-        <td class="namecell" data-label="이름">${esc(r.name)}</td>
-        <td class="typecell" data-label="유형">${esc(r.mbti_type)}</td>
-        <td data-label="혈액형">${r.blood_type ? esc(r.blood_type) + "형" : "—"}</td>
-        <td data-label="별자리">${r.zodiac ? esc(ZLABEL[r.zodiac] || r.zodiac) : "—"}</td>
-        <td class="num" data-label="E·I">${r.ei_e}:${r.ei_i}</td>
-        <td class="num" data-label="S·N">${r.sn_s}:${r.sn_n}</td>
-        <td class="num" data-label="T·F">${r.tf_t}:${r.tf_f}</td>
-        <td class="num" data-label="J·P">${r.jp_j}:${r.jp_p}</td>
-        <td class="num" data-label="문항">${r.question_count}</td>
-        <td class="num" data-label="검사일">${(() => {
-          const d = new Date(r.created_at);
-          const p2 = (n) => String(n).padStart(2, "0");
-          return `${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
-        })()}</td>
-        <td class="delcell"><button class="link" data-del="${r.id}">삭제</button></td>
-      </tr>`).join("")}</tbody>
-    </table></div>`}
+    <div class="cards">${slice.map((r) => `
+      <div class="rcard clickrow" data-row="${r.id}" title="눌러서 조합 결과 보기">
+        <div class="rc-head">
+          <span class="rc-name">${esc(r.name)}</span>
+          <span class="rc-type">${esc(r.mbti_type)}</span>
+          <button class="link rc-del" data-del="${r.id}">삭제</button>
+        </div>
+        <div class="rc-body">
+          <span><i>혈액형</i>${r.blood_type ? esc(r.blood_type) + "형" : "—"}</span>
+          <span><i>별자리</i>${r.zodiac ? esc(ZLABEL[r.zodiac] || r.zodiac) : "—"}</span>
+          <span><i>문항</i>${r.question_count}</span>
+          <span><i>E·I</i>${r.ei_e}:${r.ei_i}</span>
+          <span><i>S·N</i>${r.sn_s}:${r.sn_n}</span>
+          <span><i>T·F</i>${r.tf_t}:${r.tf_f}</span>
+          <span><i>J·P</i>${r.jp_j}:${r.jp_p}</span>
+          <span class="rc-date">${(() => {
+            const d = new Date(r.created_at);
+            const p2 = (n) => String(n).padStart(2, "0");
+            return `${String(d.getFullYear()).slice(2)}.${p2(d.getMonth() + 1)}.${p2(d.getDate())} ` +
+                   `${p2(d.getHours())}:${p2(d.getMinutes())}`;
+          })()}</span>
+        </div>
+      </div>`).join("")}</div>
+
+    ${pages > 1 ? `<div class="pager">
+      <button class="btn-ghost" id="prevp" ${page === 0 ? "disabled" : ""}>이전</button>
+      <span class="pnum">${page + 1} / ${pages}쪽</span>
+      <button class="btn-ghost" id="nextp" ${page + 1 >= pages ? "disabled" : ""}>다음</button>
+    </div>` : ""}`}
     <div class="foot">
       <span style="font-size:12.5px;color:var(--soft)">총 ${list.length}건</span>
       <button class="btn-ghost" id="out">로그아웃</button>
-    </div>`;
+    </div>
+    <div class="backnote" id="backnote">화면을 벗어나려면 아래 <b>로그아웃</b>을 눌러 주세요.</div>`;
 
   const q = document.getElementById("q");
+  const pv = document.getElementById("prevp");
+  const nx = document.getElementById("nextp");
+  if (pv) pv.addEventListener("click", () => { page--; renderList(); window.scrollTo(0, 0); });
+  if (nx) nx.addEventListener("click", () => { page++; renderList(); window.scrollTo(0, 0); });
+
   q.addEventListener("input", () => {
     query = q.value;
+    page = 0;
     const pos = q.selectionStart;
     renderList();
     const nq = document.getElementById("q");
@@ -247,6 +269,24 @@ function renderList() {
   if (csv) csv.addEventListener("click", () => exportCsv(list));
   app.querySelectorAll("[data-del]").forEach((b) =>
     b.addEventListener("click", () => remove(b.dataset.del)));
+}
+
+/* 뒤로 가기를 눌러도 인증 화면으로 튕기지 않게 막는다.
+   기록을 보다가 실수로 눌러 다시 인증하는 일을 줄이기 위해서다.
+   화면 안에서 오갈 곳이 있으면 그쪽으로 보내고, 없으면 그 자리에 머문다. */
+function guardBack() {
+  if (window.__backGuard) return;
+  window.__backGuard = true;
+  history.pushState({ adm: 1 }, "");
+  window.addEventListener("popstate", () => {
+    history.pushState({ adm: 1 }, "");        // 다시 한 칸 쌓아 밖으로 못 나가게 한다
+    if (view === "combo") { view = "list"; renderList(); return; }
+    const box = document.getElementById("app");
+    if (box) {
+      const note = document.getElementById("backnote");
+      if (note) { note.classList.add("show"); setTimeout(() => note.classList.remove("show"), 2600); }
+    }
+  });
 }
 
 function tabs() {
@@ -311,7 +351,8 @@ async function renderCombo() {
     <div class="foot">
       <span style="font-size:12.5px;color:var(--soft)">기록에 저장되지 않는 미리보기입니다</span>
       <button class="btn-ghost" id="out">로그아웃</button>
-    </div>`;
+    </div>
+    <div class="backnote" id="backnote">화면을 벗어나려면 아래 <b>로그아웃</b>을 눌러 주세요.</div>`;
 
   bindTabs();
   const redraw = () => {
@@ -357,6 +398,7 @@ function exportCsv(list) {
 }
 
 async function signOut(msg) {
+  window.__backGuard = false;
   stopIdle();
   rows = [];
   view = "list";
