@@ -195,23 +195,26 @@ function renderList() {
     ${top.length ? `<div class="row" style="margin-bottom:18px">${top.map(([t, n]) =>
       `<span class="chip">${t} ${n}</span>`).join("")}</div>` : ""}
     ${list.length === 0 ? `<p class="lead">표시할 기록이 없습니다.</p>` : `
-    <div class="scroll"><table class="tbl">
+    <div class="scroll"><table class="tbl rec">
       <thead><tr><th>이름</th><th>유형</th><th>혈액형</th><th>별자리</th>
         <th>E·I</th><th>S·N</th><th>T·F</th><th>J·P</th>
-        <th>문항</th><th>검사일시</th><th></th></tr></thead>
+        <th>문항</th><th>검사일</th><th></th></tr></thead>
       <tbody>${list.map((r) => `<tr data-row="${r.id}" class="clickrow" title="눌러서 조합 결과 보기">
-        <td>${esc(r.name)}</td>
-        <td style="font-weight:700;letter-spacing:.04em">${esc(r.mbti_type)}</td>
-        <td>${r.blood_type ? esc(r.blood_type) + "형" : "—"}</td>
-        <td>${r.zodiac ? esc(ZLABEL[r.zodiac] || r.zodiac) : "—"}</td>
-        <td class="num">${r.ei_e}:${r.ei_i}</td>
-        <td class="num">${r.sn_s}:${r.sn_n}</td>
-        <td class="num">${r.tf_t}:${r.tf_f}</td>
-        <td class="num">${r.jp_j}:${r.jp_p}</td>
-        <td class="num">${r.question_count}</td>
-        <td class="num">${new Date(r.created_at).toLocaleString("ko-KR",
-          { dateStyle: "short", timeStyle: "short" })}</td>
-        <td><button class="link" data-del="${r.id}">삭제</button></td>
+        <td class="namecell" data-label="이름">${esc(r.name)}</td>
+        <td class="typecell" data-label="유형">${esc(r.mbti_type)}</td>
+        <td data-label="혈액형">${r.blood_type ? esc(r.blood_type) + "형" : "—"}</td>
+        <td data-label="별자리">${r.zodiac ? esc(ZLABEL[r.zodiac] || r.zodiac) : "—"}</td>
+        <td class="num" data-label="E·I">${r.ei_e}:${r.ei_i}</td>
+        <td class="num" data-label="S·N">${r.sn_s}:${r.sn_n}</td>
+        <td class="num" data-label="T·F">${r.tf_t}:${r.tf_f}</td>
+        <td class="num" data-label="J·P">${r.jp_j}:${r.jp_p}</td>
+        <td class="num" data-label="문항">${r.question_count}</td>
+        <td class="num" data-label="검사일">${(() => {
+          const d = new Date(r.created_at);
+          const p2 = (n) => String(n).padStart(2, "0");
+          return `${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+        })()}</td>
+        <td class="delcell"><button class="link" data-del="${r.id}">삭제</button></td>
       </tr>`).join("")}</tbody>
     </table></div>`}
     <div class="foot">

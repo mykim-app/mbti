@@ -13,7 +13,7 @@ body{
   overflow-wrap:break-word;
 }
 /* 칸이 좁아 한 낱말도 못 들어가는 곳은 예외로 끊어 넘치지 않게 한다 */
-.tbl td,.tbl th,.jchip,.chip,.mchip,.ftag,.clabel,.opt,.sc,.cbtn,.input,.btn,.btn-ghost{
+.jchip,.chip,.mchip,.ftag,.clabel,.opt,.sc,.cbtn,.input,.btn,.btn-ghost{
   overflow-wrap:anywhere;
 }
 /* 줄 나눔을 고르게 해 마지막 줄에 한 낱말만 남는 일을 줄인다 */
@@ -110,7 +110,36 @@ h1{font-size:31px;font-weight:800;letter-spacing:-.03em;line-height:1.25;margin:
   white-space:nowrap}
 .tbl td{border-bottom:1px solid var(--rule);padding:10px 8px;vertical-align:top}
 .tbl td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
-.scroll{overflow-x:auto}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* 기록 표는 한 항목이 한 줄에 들어가야 읽힌다. 좁으면 가로로 밀어서 본다. */
+.tbl.rec{min-width:820px}
+.tbl.rec th,.tbl.rec td{white-space:nowrap;overflow-wrap:normal;word-break:keep-all;
+  padding:9px 7px}
+.tbl.rec td.num{font-size:12.5px}
+.tbl.rec td.namecell{max-width:130px;overflow:hidden;text-overflow:ellipsis}
+.tbl.rec td.typecell{font-weight:700;letter-spacing:.04em}
+
+/* 화면이 좁으면 표를 항목별 카드로 바꾼다. 가로로 밀지 않아도 다 보인다. */
+@media (max-width:760px){
+  .scroll{overflow:visible}
+  .tbl.rec{min-width:0;display:block}
+  .tbl.rec thead{display:none}
+  .tbl.rec tbody{display:block}
+  .tbl.rec tr{display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;
+    border:1px solid var(--rule);border-radius:4px;background:var(--card);
+    padding:13px 15px;margin-bottom:9px}
+  .tbl.rec td{display:flex;justify-content:space-between;align-items:baseline;
+    border:0;padding:3px 0;white-space:normal;font-size:13px}
+  .tbl.rec td::before{content:attr(data-label);color:var(--soft);font-size:11.5px;
+    margin-right:10px;flex:none}
+  .tbl.rec td.namecell{grid-column:1 / -1;max-width:none;font-size:15.5px;font-weight:700;
+    padding-bottom:8px;margin-bottom:5px;border-bottom:1px solid var(--rule);
+    display:block;overflow:visible;white-space:normal}
+  .tbl.rec td.namecell::before{display:block;margin:0 0 2px;font-weight:400}
+  .tbl.rec td.delcell{grid-column:1 / -1;justify-content:flex-end;padding-top:7px}
+  .tbl.rec td.delcell::before{display:none}
+}
 .link{background:none;border:none;color:var(--soft);font-size:12.5px;text-decoration:underline;
   cursor:pointer;font-family:inherit;padding:0}
 a.link{display:inline-block}
