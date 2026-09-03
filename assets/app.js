@@ -1,10 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { BANK, DIMS, TYPE_INFO, TYPE_DETAIL, TYPE_MATCH, TYPE_JOB } from "./questions.js";
-import { buildItems, score, buildScaleItems, scoreScale } from "./scoring.js";
+import { buildItems, score, buildScaleItems, scoreScale, matchTable } from "./scoring.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 const app = document.getElementById("app");
 const PER_PAGE = 5;
+const VERSION = "2.0";
 const LIK = [
   { v: 3, size: "d1", side: "ya" }, { v: 2, size: "d2", side: "ya" },
   { v: 1, size: "d3", side: "ya" }, { v: 0, size: "d4", side: "mid" },
@@ -25,7 +26,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
 /* ── 시작 화면 ─────────────────────────────────────────── */
 function renderIntro() {
   app.innerHTML = `
-    <h1>성격유형 검사</h1>
+    <h1>성격유형 검사 <span class="ver">v${VERSION}</span></h1>
     <p class="lead">${state.format === "scale"
       ? "문장을 읽고 얼마나 그런지 일곱 단계 중 하나를 고릅니다."
       : "각 질문마다 네 개의 답 중 자신에게 가장 가까운 하나를 고릅니다."}
@@ -315,6 +316,7 @@ function renderResult() {
   const detail = TYPE_DETAIL[type] || {};
   const job = TYPE_JOB[type] || { jobs: [] };
   const match = TYPE_MATCH[type] || { fit: [], hard: [] };
+  const table = matchTable(type, Object.keys(TYPE_INFO));
   const close = DIMS.filter((d) => dims[d].pctA >= 42 && dims[d].pctA <= 58);
   const today = new Date().toLocaleDateString("ko-KR");
 
@@ -380,6 +382,22 @@ function renderResult() {
         <div><p class="sub">결이 잘 맞는 유형</p><div class="pairs">${pair(match.fit, "fitp")}</div></div>
         <div><p class="sub">부딪히기 쉬운 유형</p><div class="pairs">${pair(match.hard, "hardp")}</div></div>
       </div>
+
+      <h2 class="sec sub2">연애 · 일 · 친구로 나눠 본 궁합</h2>
+      <p class="jenv">위의 두 유형은 성향의 결을 본 것이고, 아래 표는 상황별로 따로 계산한 것이라
+        순위가 다를 수 있습니다.</p>
+      <div class="mfull">
+        <table class="tbl mt">
+          <thead><tr><th>유형</th><th>연애</th><th>일</th><th>친구</th><th>종합</th></tr></thead>
+          <tbody>${table.map((r) => `<tr>
+            <td class="mtype">${r.type}<span class="mlab">${(TYPE_INFO[r.type] || [""])[0]}</span></td>
+            <td class="num">${r.love}</td><td class="num">${r.work}</td>
+            <td class="num">${r.friend}</td><td class="num mtot">${r.total}</td>
+          </tr>`).join("")}</tbody>
+        </table>
+      </div>
+      <div class="mmini">${table.map((r) =>
+        `<span class="mchip"><b>${r.type}</b>${r.total}</span>`).join("")}</div>
     </section>
 
     <section class="blk">
@@ -392,9 +410,9 @@ function renderResult() {
         `<span class="jchip">${esc(j)}</span>`).join("")}</div>` : ""}
     </section>
 
-    <p class="rfoot">${state.items.length}문항 기준의 참고 결과입니다.
+    <p class="rfoot">v${VERSION} · ${state.items.length}문항 기준의 참고 결과입니다.
       같은 사람이 몇 주 뒤 다시 하면 한 지표가 바뀌기도 합니다.
-      궁합의 백분율은 통계 조사값이 아니라 네 지표의 조합으로 매긴 참고 점수이며, 순위 역시 그 값에 따른 것입니다. 관계나 진로를 정하는 근거로 쓰지 않습니다.</p>
+      궁합의 백분율은 통계 조사값이 아니라 네 지표의 조합으로 매긴 참고 점수이며, 연애·일·친구 점수도 같은 방식으로 계산했습니다. 관계나 진로를 정하는 근거로 쓰지 않습니다.</p>
   </div>
 
   ${close.length ? `<div class="note noprint">${close.map((d) =>

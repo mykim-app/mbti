@@ -121,3 +121,36 @@ export function scoreScale(items, answers) {
   }
   return { type, dims };
 }
+
+/* ── 유형 간 궁합 점수 ─────────────────────────────────────
+   연애·일·친구 세 가지로 나눠 계산한다. 무엇을 얼마나 반영하는지는 아래가 전부다.
+
+   연애 : 보는 방식이 같으면 크게 더하고, 안팎 성향과 생활 방식은
+          서로 반대일 때 더한다(부족한 쪽을 채워 주므로).
+   일   : 판단 기준과 일하는 방식이 같을 때 크게 더한다.
+   친구 : 보는 방식과 노는 결이 같을 때 더한다.
+
+   통계 조사값이 아니라 네 지표의 조합으로 매긴 참고 점수다. */
+const W = {
+  love:   { sn: 30, tf: 20, ei: 25, jp: 15, base: 10, eiSame: false, jpSame: false },
+  work:   { sn: 25, tf: 25, ei: 10, jp: 30, base: 10, eiSame: false, jpSame: true },
+  friend: { sn: 35, tf: 20, ei: 20, jp: 15, base: 10, eiSame: true, jpSame: true }
+};
+
+export function matchScores(a, b) {
+  const same = [0, 1, 2, 3].map((i) => a[i] === b[i]);   // E/I, S/N, T/F, J/P
+  const calc = (w) =>
+    (same[1] ? w.sn : 0) +
+    (same[2] ? w.tf : 0) +
+    ((w.eiSame ? same[0] : !same[0]) ? w.ei : 0) +
+    ((w.jpSame ? same[3] : !same[3]) ? w.jp : 0) + w.base;
+  const love = calc(W.love), work = calc(W.work), friend = calc(W.friend);
+  return { love, work, friend, total: Math.round((love + work + friend) / 3) };
+}
+
+// 나를 뺀 15개 유형을 종합 점수가 높은 순으로 돌려준다.
+export function matchTable(type, all) {
+  return all.filter((t) => t !== type)
+    .map((t) => ({ type: t, ...matchScores(type, t) }))
+    .sort((x, y) => y.total - x.total || (x.type < y.type ? -1 : 1));
+}

@@ -224,3 +224,25 @@ a.link{display:inline-block}
   .noprint,.note,.err,.ok,.btn,.btn-ghost,.link,.dotlink{display:none !important}
   .sheet,section,.cols,.pair,.axis{break-inside:avoid;page-break-inside:avoid}
 }
+
+/* ── 버전 표시 ─────────────────────────────────────────── */
+.ver{font-size:12px;font-weight:700;letter-spacing:0;color:var(--soft);
+  border:1px solid var(--rule);border-radius:3px;padding:2px 7px;
+  vertical-align:middle;margin-left:6px}
+
+/* ── 전체 궁합표 ───────────────────────────────────────── */
+.sub2{margin-top:26px}
+.mt{margin-top:4px}
+.mt th:not(:first-child),.mt td:not(:first-child){text-align:right;width:52px}
+.mt td{padding:7px 8px}
+.mtype{font-weight:700;letter-spacing:.03em}
+.mlab{font-weight:400;letter-spacing:0;color:var(--soft);font-size:11.5px;margin-left:6px}
+.mtot{font-weight:800}
+.mmini{display:none}
+.mchip{border:1px solid var(--rule);border-radius:3px;padding:3px 5px;
+  font-size:9px;font-variant-numeric:tabular-nums;text-align:center;background:var(--card)}
+.mchip b{display:block;font-size:9.5px;letter-spacing:.03em}
+.compact .mfull{display:none}
+.compact .mmini{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:6px}
+.compact .sub2{margin-top:13px}
+.compact .jenv{margin-bottom:5px}
