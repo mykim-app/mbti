@@ -11,6 +11,34 @@
   <main class="wrap" id="app">
     <p class="lead">불러오는 중입니다.</p>
   </main>
+  <script>
+    // 화면 스크립트가 아예 실행되지 못한 경우를 알려 준다.
+    // (파일이 빠졌거나 경로가 틀리면 아무 반응 없이 멈춰 보이기 때문)
+    window.__loaded = false;
+    window.addEventListener("error", function (e) {
+      var box = document.getElementById("app");
+      if (!box || window.__loaded) return;
+      var src = (e.target && (e.target.src || e.target.href)) || "";
+      box.innerHTML =
+        '<h1>화면을 불러오지 못했습니다</h1>' +
+        '<p class="lead">필요한 파일 하나를 읽지 못했습니다. 아래를 확인해 주세요.</p>' +
+        '<ul class="rlist"><li>assets 폴더에 config.js, questions.js, scoring.js, ' +
+        'combo.js, report.js, fortune.js, app.js, admin.js, styles.css 가 모두 있는지</li>' +
+        '<li>브라우저가 옛 파일을 물고 있지 않은지 (시크릿 창에서 열어 보기)</li></ul>' +
+        (src ? '<div class="err">읽지 못한 파일: ' + src + '</div>' : '') +
+        '<p class="lead">브라우저에서 F12 를 눌러 콘솔 탭을 열면 자세한 사유가 나옵니다.</p>';
+    }, true);
+    setTimeout(function () {
+      var box = document.getElementById("app");
+      if (box && !window.__loaded && box.textContent.indexOf("불러오는 중") >= 0) {
+        box.innerHTML =
+          '<h1>화면을 불러오지 못했습니다</h1>' +
+          '<p class="lead">스크립트가 실행되지 않았습니다. assets 폴더의 파일이 모두 올라갔는지, ' +
+          '브라우저가 옛 파일을 물고 있지 않은지 확인해 주세요. ' +
+          'F12 를 눌러 콘솔 탭을 열면 자세한 사유가 나옵니다.</p>';
+      }
+    }, 6000);
+  </script>
   <script type="module" src="./assets/admin.js"></script>
 </body>
 </html>
