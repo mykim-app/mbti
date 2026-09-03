@@ -5,6 +5,7 @@ import { renderComboSections } from "./combo.js";
 import { renderTypeReport } from "./report.js";
 
 const app = document.getElementById("app");
+window.__loaded = true;   // 화면 스크립트가 실행됐다는 표시
 const configured = !SUPABASE_URL.includes("여기에") && !SUPABASE_ANON_KEY.includes("여기에");
 // 로그인 상태를 브라우저에 남기지 않는다. 화면을 새로 열면 매번 인증번호를 받아야 한다.
 const sb = configured
